@@ -10,4 +10,5 @@ This repository contains any artifical intelligence or other tool and messages f
     ├── requierments.txt     # Common packages used for projects and quizzes
 ## Environment
 Anconda 4.10.3
+
 python 3.7
