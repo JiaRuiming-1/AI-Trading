@@ -1,4 +1,4 @@
-# AI in Trading NanoDegree (AITND)
+# AI in Trading
 This repository contains any artifical intelligence or other tool and messages for quant trading what I have learned and organized from simple to complex.
 ## Repository File Structure
     .
