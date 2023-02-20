@@ -6,7 +6,6 @@ This repository contains any artifical intelligence or other tool and messages f
     ├── p ..../
     ├── p8_xxx/
     ├── option/              # Other method would be mentioned in project
-    ├── helper.py            # A helper file shared across projects and quizzes
     ├── requierments.txt     # Common packages used for projects and quizzes
 ## Environment
 Anconda 4.10.3
