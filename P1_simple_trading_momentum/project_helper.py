@@ -1,12 +1,7 @@
 import helper
 import plotly.graph_objs as go
 import plotly.offline as offline_py
-
-# Ipython expression blow:
-#offline_py.init_notebook_mode(connected=True)
-
-# pycharm expression blow
-from plotly.offline import plot
+offline_py.init_notebook_mode(connected=True)
 
 
 def _generate_stock_trace(prices):
@@ -25,8 +20,8 @@ def _generate_traces(name_df_color_data):
             name=name,
             x=df.index,
             y=df,
-            mode='line',
-            line={'color': color}))
+            mode='lines',
+            line={'color': helper.color_scheme['major_line']}))
 
     return traces
 
@@ -37,7 +32,7 @@ def plot_stock(prices, title):
 
     stock_trace = _generate_stock_trace(prices)
 
-    plot({'data': [stock_trace], 'layout': layout}, config=config)
+    offline_py.iplot({'data': [stock_trace], 'layout': layout}, config=config)
 
 
 def print_dataframe(df, n_rows=10, n_columns=3):
@@ -66,7 +61,7 @@ def print_dataframe(df, n_rows=10, n_columns=3):
             'fill': {'color': [helper.color_scheme['df_header'], helper.color_scheme['df_value']]},
             'font': {'size': 13}})
 
-    plot([trace], config=config)
+    offline_py.iplot([trace], config=config)
 
 
 def plot_resampled_prices(df_resampled, df, title):
@@ -77,7 +72,7 @@ def plot_resampled_prices(df_resampled, df, title):
         ('Monthly Close', df_resampled, helper.color_scheme['major_line']),
         ('Close', df, helper.color_scheme['minor_line'])])
 
-    plot({'data': traces, 'layout': layout}, config=config)
+    offline_py.iplot({'data': traces, 'layout': layout}, config=config)
 
 
 def plot_returns(returns, title):
@@ -87,7 +82,7 @@ def plot_returns(returns, title):
     traces = _generate_traces([
         ('Returns', returns, helper.color_scheme['major_line'])])
 
-    plot({'data': traces, 'layout': layout}, config=config)
+    offline_py.iplot({'data': traces, 'layout': layout}, config=config)
 
 
 def plot_shifted_returns(df_shited, df, title):
@@ -98,7 +93,7 @@ def plot_shifted_returns(df_shited, df, title):
         ('Shifted Returns', df_shited, helper.color_scheme['major_line']),
         ('Returns', df, helper.color_scheme['minor_line'])])
 
-    plot({'data': traces, 'layout': layout}, config=config)
+    offline_py.iplot({'data': traces, 'layout': layout}, config=config)
 
 
 def print_top(df, name, top_n=10):

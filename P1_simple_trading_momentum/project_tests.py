@@ -2,8 +2,7 @@ from collections import OrderedDict
 import pandas as pd
 import numpy as np
 
-from altifical_for_trading.project1_trading_with_momentum.tests \
-    import generate_random_tickers, assert_output, project_test
+from tests import generate_random_tickers, assert_output, project_test
 
 
 @project_test
