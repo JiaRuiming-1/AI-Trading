@@ -12,6 +12,7 @@ keras
 matplotlib                   3.5.3
 matplotlib-inline            0.1.6
 networkx                     2.6.3
+nbformat
 numpy                        1.21.6
 pandas                       1.3.5
 Pillow                       9.4.0
