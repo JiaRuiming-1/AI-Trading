@@ -4,5 +4,5 @@ After that, we analysis if log return be nomal. If not, why? And find outline ti
 1. Plot position line by pd.rolling(window)
 2. Mark long and shor positon in table and on graph
 3. Calculate strategy log return and plot histogram graph
-4. Find outline ticker by Kolmogorov-Smirnov test (KS test) and implementation through `from scipy.stats import kstest` and `kstest(data['signal_return'], 'norm', (signal_returns_mean, signal_returns_std))
-5. Use Ks_value > ks_threshold and p_value < p_threashold to find outline tickers
+4. Find outline ticker by Kolmogorov-Smirnov test (KS test) and implementation through `from scipy.stats import kstest` and `kstest(data['signal_return'], 'norm', (signal_returns_mean, signal_returns_std))`
+5. Use `Ks_value > ks_threshold and p_value < p_threashold` to find outline tickers
