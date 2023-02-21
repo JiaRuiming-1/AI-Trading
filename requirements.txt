@@ -1,3 +1,5 @@
+colour
+cvxpy
 box2d-py                     2.3.5
 cmake                        3.25.2
 cycler                       0.11.0
