@@ -72,9 +72,9 @@ Some models and constraints below:
   
   $$or~objective: ~~~~ -X^Tu + bX^TPX ~~~~ b=tradeoffparameter $$
 
-  (b) Use L2 nomal to model:
+  (b) Use L2 nomal to model, the q can be look as a basline, such as index or ETF, the lambda control how much objective will similar to the q:
     
-  $$ objective:~~~ X^TPX + \lambda \|x_i-q\| ~~~~ q=asetofindexweights ~~~~ \lambda=atradeoffparameter $$
+  $$ objective:~~~ X^TPX + \lambda \|x_i-q\|  ~~~~ \lambda=a~trade~off~parameter $$
 
 
 
