@@ -28,8 +28,10 @@ we can also denote $$P = \sigma^2 = R^TR$$
 
 #### 4. portfolio Efficent Frontier
 <img src="images/5.jpg" width="500px"><img src="images/6.jpg" width="500px">
-If we try all kind of portfolio combination, we got the a set of point can be calculated return and volatility then make a graph
+If we try all kind of portfolio combination, we got the a set of point can be calculated return and volatility then make a graph.
+
 The curve line called frontier can be look as a reasonable investment bettwen risk and return
+
 The straight line called Captial Market line which slope calculate as SharpRatio
 
 #### 4.The Sharpe Ratio
