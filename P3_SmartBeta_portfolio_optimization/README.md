@@ -45,6 +45,17 @@ $$ SharpeRatio = \frac{\bar{D}}{D_\sigma} \approx \frac{R - R_m}{\sigma(R-R_m)} 
 
 where the R and R_m also can be portfolio expect return and market baseline as a free return.
 
+#### 5. Simi-Deviation
+Semi-deviation is calculated in a similar way as standard deviation, except it only includes observations that are less than the mean.
+
+$$ \sigma = \frac{1}{T} \sum_{t=1}^{n}(\bar{R}-r_i)^2 \times I_ri$$
+
+I_ri = 0 where ri>R_average else I_ri = 1
+
+#### 6. Value-at-Risk (VaR)
+Here is just an example to describe where to use it. VaR is defined as the maximum dollar amount expected to be lost over a given time horizon at a predefined confidence level. For example, if the 95% one month VaR is $1 million, there is 95% confidence that the portfolio will not lose more than $1 million next month.
+
+
 
 
   
