@@ -30,9 +30,9 @@ we can also denote $$P = \sigma^2 = R^TR$$
 <img src="images/5.jpg" width="500px"><img src="images/6.jpg" width="500px">
 If we try all kind of portfolio combination, we got the a set of point can be calculated return and volatility then make a graph.
 
-The curve line called frontier can be look as a reasonable investment bettwen risk and return
+The curve line called Frontier can be look as a reasonable investment bettwen risk and return
 
-The straight line called Captial Market line which slope calculate as SharpRatio
+The straight line called Captial Market Line which slope calculate as SharpRatio
 
 #### 4.The Sharpe Ratio
 The numerator of the Sharpe ratio is called the excess return, differential return as well as the risk premium. It’s called “excess return” because this is the return in excess of the risk-free rate. 
