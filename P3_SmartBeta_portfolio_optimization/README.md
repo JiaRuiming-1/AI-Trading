@@ -59,6 +59,23 @@ I_ri = 0 where ri>R_average else I_ri = 1
 #### 6. Value-at-Risk (VaR)
 Here is just an example to describe where to use it. VaR is defined as the maximum dollar amount expected to be lost over a given time horizon at a predefined confidence level. For example, if the 95% one month VaR is $1 million, there is 95% confidence that the portfolio will not lose more than $1 million next month.
 
+## optimization portfolio
+1. We built calculate math model and some constraints, for example we minize the portfolio risk and constrain is weights sum equal to one.
+2. After step1, wo can optimize math model by calulate drivation and find limit value.
+Some models and constraints below:
+
+  (a) X is a set of each asset of weight , the u is assets average return, p is threshold risk:
+  
+  $$constraint: ~~~~ X^TPX \leq threshold(p) ~~~and~~~ \sum{}{X}=1$$  
+  
+  $$objective: ~~~~ -X^Tu $$
+  
+  $$or~objective: ~~~~ -X^Tu + bX^TPX ~~~~ b=tradeoffparameter $$
+
+  (b) Use L2 nomal to model:
+    
+  $$ objective:~~~ X^TPX + \lambda \|x_i-q\| ~~~~ q=asetofindexweights ~~~~ \lambda=atradeoffparameter $$
+
 
 
 
