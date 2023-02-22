@@ -75,6 +75,8 @@ Some models and constraints below:
   (b) Use L2 nomal to model, the q can be look as a basline, such as index or ETF, the lambda control how much objective will similar to the q:
     
   $$ objective:~~~ X^TPX + \lambda \|x_i-q\|  ~~~~ \lambda=a~trade~off~parameter $$
+  
+In this project we can code to optimize portfolio by cvxpy of python tools, check it in `cvxpy_advanced.ipynb`
 
 
 
