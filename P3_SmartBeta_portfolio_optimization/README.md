@@ -1,4 +1,4 @@
-## project instruction
+## Project Instruction
 In this project we try some portfolio weights based on index and dividend, and find a method to optimize volatility and return.
 1. Calculate each ticker weight by market value and dividend.
 2. Plot hotmap to overview these weights distribution
