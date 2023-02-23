@@ -1,3 +1,13 @@
+## project instruction
+In this project we try some portfolio weights based on index and dividend, and find a method to optimize volatility and return.
+1. Calculate each ticker weight by market value and dividend.
+2. Plot hotmap to overview these weights distribution
+3. Compare two different volatility and returns by accumulate weights-return
+4. Construct optimized model(minimize volatility and close to index return) then got new weigths by python cvxpy.
+5. Compare new weights-return volatility and return to baseline.
+6. Optimize weights in stages and check what's different
+7. Calculate Annulized turnover by each stage of weights change.
+
 ## review math concept
 
 #### 1. portfolio expected log return:
