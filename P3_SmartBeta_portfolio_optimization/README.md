@@ -10,7 +10,7 @@
 
 $$Cov(rA,rB) = \frac{1}{1+n}\sum_{i=1}^{n}(rA_i-\bar{rA})(rB_i-\bar{rB})$$
 
-suppose we have r1...rn and average of R = R-Rf, where Rf is asset expect return and Rf is a baseline of market return, so we have portfolio risk as below:
+suppose we have r1...rn and average of R = R-Rf, where R contain each asset expect return and Rf is a baseline of market return, so we have portfolio risk as below:
 
 $$\sigma^2 = \begin{pmatrix}
   r_{1,1} & r_{1,2} & \cdots & r_{1,n} \\
