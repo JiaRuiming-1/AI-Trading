@@ -31,6 +31,7 @@ scipy
 seaborn                      0.12.2
 setuptools                   67.1.0
 six                          1.16.0
+SQLAlchemy
 statsmodels                  0.13.5
 swig                         4.1.1
 tensorboard                  1.15.0
