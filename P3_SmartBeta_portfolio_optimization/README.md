@@ -26,7 +26,7 @@ $$\sigma^2 = \begin{pmatrix}
 
 we can also denote $$P = \sigma^2 = R^TR$$
 
-#### 4. portfolio Efficent Frontier
+#### 4. Efficent Frontier and Captial Market Line
 <img src="images/5.jpg" width="500px"><img src="images/6.jpg" width="500px">
 If we try all kind of portfolio combination, we got the a set of point can be calculated return and volatility then make a graph.
 
