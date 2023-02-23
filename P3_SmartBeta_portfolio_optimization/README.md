@@ -34,7 +34,7 @@ The curve line called Frontier can be look as a reasonable investment bettwen ri
 
 The straight line called Captial Market Line which slope calculate as SharpRatio
 
-#### 4.The Sharpe Ratio
+#### 5.The Sharpe Ratio
 The numerator of the Sharpe ratio is called the excess return, differential return as well as the risk premium. It’s called “excess return” because this is the return in excess of the risk-free rate. 
 
 The risk premium denote with _D_ equals the portfolio return(R_p) minus risk free rate(R_f) over a period of time:
