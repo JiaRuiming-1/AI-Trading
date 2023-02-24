@@ -1,4 +1,4 @@
-# AI in Trading
+# AI for Trading
 This repository contains any artifical intelligence or other tool and messages for quant trading what I have learned and organized from step by step.
 ## Repository File Structure
     .
