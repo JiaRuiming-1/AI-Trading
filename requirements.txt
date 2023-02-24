@@ -27,6 +27,7 @@ setuptools=67.1.0
 six=1.16.0
 SQLAlchemy
 statsmodels=0.13.5
+stockstats
 swig=4.1.1
 tensorflow=1.15.3
 torch=1.9.1
