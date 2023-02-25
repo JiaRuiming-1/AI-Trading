@@ -11,7 +11,7 @@
 ## review math concept
 If we got some factors relate to our portfolio risk and return, we can bulid model to calculate that. If we found some strong relation bettwen facotrs and returns, these factor could be called alpha factors.
 
-We can construct return model r = Bf + s, each variance represent a matrix. r=Return, B=exposure of factor, s=can't explain variance. This model just explained as a liner model. 
+We can construct return model r = Bf + s which defined by CAPM(Captial Assets Pricing Model), each variance represent a matrix. r=Return, B=exposure of factor, s=can't explain variance. This model just explained as a liner model. 
 
 Then, we calculate volatility of portfolio by facors denote E(rrT), Suppose the s contains independent facors to our factors thus cov(f,s)=0
 
@@ -19,6 +19,6 @@ Then, we calculate volatility of portfolio by facors denote E(rrT), Suppose the 
 
 Most of time, if we got our factors, we may seperate factor matrix as alpha matrix and risk matrix. Because we don't want to contraint our alpha facor in convex optimization process.
 
-At last, as we use weight to calculate volatility of portfolio, the equation below. In order to calculate exposure B, we can use Fama French 3 Factor Model to regression the relationshap bettwen r(actual) and r(estimate). The spicific return S = r(actual) - r(estimate) we can calculate by CAPM(Captial Assets Pricing Model)
+At last, as we use weight to calculate volatility of portfolio, the equation below. In order to calculate exposure B, we can use Fama French 3 Factor Model to regression the relationshap bettwen r(actual) and r(estimate). The spicific return S = r(actual) - r(estimate) we can calculate by CAMP
 
 <img src="images/3.jpg" width="500px"><img src="images/5.jpg" width="500px">
