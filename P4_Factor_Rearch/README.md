@@ -6,7 +6,7 @@
   Here is an example of coding in `Tushare_Coding.ipynb` file you can get a view.
 
 ## review math concept
-If we got some factors relate to our portfolio risk and return, we can bulid model to calculate that.
+If we got some factors relate to our portfolio risk and return, we can bulid model to calculate that. If we found some strong relation bettwen facotrs and returns, these factor could be called alpha factors.
 
 We can construct return model r = Bf + s, each variance represent a matrix. r=Return, B=exposure of factor, s=can't explain variance. This model just explained as a liner model. 
 
