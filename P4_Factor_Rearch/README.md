@@ -8,7 +8,7 @@
 ## Tow Stock Portfolio Variance Example
   Here is an example `portfolio_variance.ipynb` file to familiar how to code to calculte variance by math concept which display below.
 
-## review math concept
+## Review Math Concept
 If we got some factors relate to our portfolio risk and return, we can bulid model to calculate that. If we found some strong relation bettwen facotrs and returns, these factor could be called alpha factors.
 
 We can construct return model r = Bf + s which defined by CAPM(Captial Assets Pricing Model), each variance represent a matrix. r=Return, B=exposure of factor, s=can't explain variance. This model just explained as a liner model. 
