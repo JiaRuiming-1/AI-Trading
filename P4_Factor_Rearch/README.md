@@ -6,3 +6,11 @@
   Here is an example of coding in `Tushare_Coding.ipynb` file you can get a view.
 
 ## review math concept
+If we got some factors relate to our portfolio risk and return, we can bulid model to calculate that.
+
+We can construct return model r = Bf + s, each variance represent a matrix. r=Return, B=exposure of factor, s=can't explain variance. This model just explained as a liner model.
+
+Then, we calculate volatility of portfolio by facors denote E(rrT)
+
+<img src="images/1.jpg" width="500px"><img src="images/2.jpg" width="500px">
+
