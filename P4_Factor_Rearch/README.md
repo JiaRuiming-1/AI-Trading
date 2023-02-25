@@ -14,3 +14,4 @@ Then, we calculate volatility of portfolio by facors denote E(rrT)
 
 <img src="images/1.jpg" width="500px"><img src="images/2.jpg" width="500px">
 
+Most of time, if we got our factors, we may seperate factor matrix as alpha matrix and risk matrix. Because we don't want to contraint our alpha facor in convex optimization process.
