@@ -22,3 +22,9 @@ Most of time, if we got our factors, we may seperate factor matrix as alpha matr
 At last, as we use weight to calculate volatility of portfolio, the equation below. In order to calculate exposure B, we can use Fama French 3 Factor Model to regression the relationshap bettwen r(actual) and factors, then the r(estimate) = $\beta * f$. The spicific return S = r(actual) - r(estimate) 
 
 <img src="images/3.jpg" width="500px"><img src="images/5.jpg" width="500px">
+
+There is another case, sometimes we may not dependent on Time Series Model, because we got each stock factor exposures at one time. 
+For example, the book market ratio, net assets, industry etc. Something like not change for a long period time.
+Thus, we need to regression factors at each time. We called that as Cross Sectional Model After that, we can calculate portfolio variance.
+
+<img src="images/6.jpg" width="500px">
