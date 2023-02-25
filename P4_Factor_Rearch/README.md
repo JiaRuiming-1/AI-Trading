@@ -8,9 +8,9 @@
 ## review math concept
 If we got some factors relate to our portfolio risk and return, we can bulid model to calculate that.
 
-We can construct return model r = Bf + s, each variance represent a matrix. r=Return, B=exposure of factor, s=can't explain variance. This model just explained as a liner model. Suppose the s contains independent facor to our factors thus cov(f,s)=0
+We can construct return model r = Bf + s, each variance represent a matrix. r=Return, B=exposure of factor, s=can't explain variance. This model just explained as a liner model. 
 
-Then, we calculate volatility of portfolio by facors denote E(rrT)
+Then, we calculate volatility of portfolio by facors denote E(rrT), Suppose the s contains independent facor to our factors thus cov(f,s)=0
 
 <img src="images/1.jpg" width="500px"><img src="images/2.jpg" width="500px">
 
