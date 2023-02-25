@@ -19,5 +19,5 @@ Then, we calculate volatility of portfolio by facors denote E(rrT), Suppose the 
 
 Most of time, if we got our factors, we may seperate factor matrix as alpha matrix and risk matrix. Because we don't want to contraint our alpha facor in convex optimization process.
 
-At last, as we use weight to calculate volatility of portfolio, the equation below:
-<img src="images/3.jpg" width="500px">
+At last, as we use weight to calculate volatility of portfolio, the equation below. In order to calculate exposure B, we can use Fama French 3 Factor Model to regression the relationshap bettwen r(actual) and r(estimate). The spicific return S = r(actual) - r(estimate) we can calculate by CAPM(Captial Assets Pricing Model)
+<img src="images/3.jpg" width="500px"><img src="images/5.jpg" width="500px">
