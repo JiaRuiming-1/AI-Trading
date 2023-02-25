@@ -25,6 +25,6 @@ At last, as we use weight to calculate volatility of portfolio, the equation bel
 
 There is another case, sometimes we may not dependent on Time Series Model, because we got each stock factor exposures at one time. 
 For example, the book market ratio, net assets, industry etc. Something like not change for a long period time.
-Thus, we need to regression factors at each time. We called that as Cross Sectional Model After that, we can calculate portfolio variance.
+Thus, we need to regression factors at each time. We called that as Cross Sectional Model. After that, we can calculate portfolio variance.
 
 <img src="images/6.jpg" width="500px">
