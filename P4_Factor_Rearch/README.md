@@ -5,6 +5,9 @@
   We process data and add some indicators by `stockstats` python package.
   Here is an example of coding in `Tushare_Coding.ipynb` file you can get a view.
 
+## Tow Stock Portfolio Variance Example
+  Here is an example `portfolio_variance.ipynb` file to familiar how to code to calculte variance by math concept which display below.
+
 ## review math concept
 If we got some factors relate to our portfolio risk and return, we can bulid model to calculate that. If we found some strong relation bettwen facotrs and returns, these factor could be called alpha factors.
 
@@ -15,3 +18,6 @@ Then, we calculate volatility of portfolio by facors denote E(rrT), Suppose the 
 <img src="images/1.jpg" width="500px"><img src="images/2.jpg" width="500px">
 
 Most of time, if we got our factors, we may seperate factor matrix as alpha matrix and risk matrix. Because we don't want to contraint our alpha facor in convex optimization process.
+
+At last, as we use weight to calculate volatility of portfolio, the equation below:
+<img src="images/3.jpg" width="500px">
