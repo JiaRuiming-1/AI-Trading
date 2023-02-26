@@ -1,3 +1,4 @@
+alphalens
 colour
 cvxpy
 box2d-py=2.3.5
