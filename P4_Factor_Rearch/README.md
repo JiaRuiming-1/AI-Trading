@@ -8,6 +8,10 @@
 ## Tow Stock Portfolio Variance Example
   Here is an example `portfolio_variance.ipynb` file to familiar how to code to calculte variance by math concept which display below.
 
+## PCA as a risk model
+  Sometimes, to calculate variance of portfolio easily traped into dimensional disaster. PCA is a way to solve this problem. It can estimate portfolio risk   by principle component variance of projection so that successed to got dimensionality reduction.
+  `PCA_model.ipynb` file to familiar how to code to estimate variance of portfolio
+
 ## Review Math Concept
 If we got some factors relate to our portfolio risk and return, we can bulid model to calculate that. If we found some strong relation bettwen facotrs and returns, these factor could be called alpha factors.
 
