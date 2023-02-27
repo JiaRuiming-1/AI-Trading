@@ -5,12 +5,21 @@
   We process data and add some indicators by `stockstats` python package.
   Here is an example of coding in `Tushare_Coding.ipynb` file you can get a view.
 
-## Tow Stock Portfolio Variance Example
-  Here is an example `portfolio_variance.ipynb` file to familiar how to code to calculte variance by math concept which display below.
+## Two Stock Portfolio Variance Example
+  Here is an example `portfolio_variance.ipynb` file to familiar how to code to calculte variance by Math Concept which display in the last institution.
 
 ## PCA as a risk model
   Sometimes, to calculate variance of portfolio easily traped into dimensional disaster. PCA is a way to solve this problem. It can estimate portfolio risk   by principle component variance of projection so that successed to got dimensionality reduction.
   `PCA_model.ipynb` file to familiar how to code to estimate variance of portfolio
+
+## Factor Estimated Methods
+There are many indicators can be calculated to estimate performance of the factors. The main indicators include
+  1. Sharp Ratio: measure factors comprehensive performance(mean(factor_retrn)/std(factor_return))
+  2. Accumulate Return: The facotor contribute to portfolio accumulate return (or factor accumulate return )
+  3. IC value: measure the correlation bettwen return and factor (factors and returns alway expressed by nomal rank or zscore)
+  4. Quantile: seperate factor value into some classes by each period and statistic each class mean return so that overview the monotonous and variance to express return.
+  5. FRA(Factor Auto Correlation) or TurnOver：measure trade costs
+ Here is an example 'alphalens_coding.ipynb' file to show you how to use `alphalens` python package ti implement these method.
 
 ## Review Math Concept
 If we got some factors relate to our portfolio risk and return, we can bulid model to calculate that. If we found some strong relation bettwen facotrs and returns, these factor could be called alpha factors.
