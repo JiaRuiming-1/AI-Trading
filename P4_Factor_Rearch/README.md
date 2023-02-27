@@ -23,7 +23,7 @@ There are many indicators can be calculated to estimate performance of the facto
   Here is an example `alphalens_coding.ipynb` file to show you how to use `alphalens` python package ti implement these method.
  
  ## Alpha Factors Implementation by Paper
- At last, we pick up four acdemic paper research on alpha factors to implement. The code file is `Alpha_on_Paper.ipynb`, Maybe there is another option view about custom factor defined by mine. The performance you guess what?
+ At last, we pick up four acdemic paper research on alpha factors to implement. The code file is `Alpha_on_Paper.ipynb`, Also there is another optional choice to view a custom factor created by mine. The performance you guess what?
  
  [Overnight Returns and Firm-Specific Investor Sentiment](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2554010)
  
