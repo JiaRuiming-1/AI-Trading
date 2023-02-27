@@ -19,7 +19,8 @@ There are many indicators can be calculated to estimate performance of the facto
   3. IC value: measure the correlation bettwen return and factor (factors and returns alway expressed by nomal rank or zscore)
   4. Quantile: seperate factor value into some classes by each period and statistic each class mean return so that overview the monotonous and variance to express return.
   5. FRA(Factor Auto Correlation) or TurnOver：measure trade costs
- Here is an example 'alphalens_coding.ipynb' file to show you how to use `alphalens` python package ti implement these method.
+
+Here is an example 'alphalens_coding.ipynb' file to show you how to use `alphalens` python package ti implement these method.
 
 ## Review Math Concept
 If we got some factors relate to our portfolio risk and return, we can bulid model to calculate that. If we found some strong relation bettwen facotrs and returns, these factor could be called alpha factors.
