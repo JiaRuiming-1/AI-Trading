@@ -5,6 +5,7 @@ This project contains 5 seperate knowledge sections needed be describe in detial
 3. Estimate portfolio variance by PCA
 4. Construct factor and estimate performance of factor by alphens package
 5. Appendix some math concept about how to calculate portfolio variance
+
 After master abvoe knowledge, we consturct some factors by academic paper(net address display below) and construct our portfolio. 
 We will estimate this portfolio variace by PCA and use convex optimization method to get portfolio weights.
 We will estimate alpha factor return by alphalens and analysis the performance of these factors.
