@@ -1,6 +1,6 @@
 ## Project Instruction
 This project contains 5 seperate knowledge sections needed to be described in detial. 
-1. Doload stock date from Tushare and add some indicators.
+1. Doload stock data from Tushare and add some indicators.
 2. Calculate two stocks portfolio variance as an example to familiar math concepts.
 3. Estimate portfolio variance by PCA
 4. Construct factor and estimate performance of factor by alphens package
