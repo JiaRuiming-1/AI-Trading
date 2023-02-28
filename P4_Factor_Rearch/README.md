@@ -1,11 +1,20 @@
 ## Project Instruction
+This project contains 5 seperate knowledge sections needed be describe in detial. 
+1. Doload stock date from Tushare and add some indicators.
+2. Calculate two stocks portfolio variance as an example to familiar math concepts.
+3. Estimate portfolio variance by PCA
+4. Construct factor and estimate performance of factor by alphens package
+5. Appendix some math concept about how to calculate portfolio variance
+After master abvoe knowledge, we consturct some factors by academic paper(net address display below) and construct our portfolio. 
+We will estimate this portfolio variace by PCA and use convex optimization method to get portfolio weights.
+We will estimate alpha factor return by alphalens and analysis the performance of these factors.
 
 ## Get Date
   We load data from [Tushare](https://tushare.pro/) platform, which is a quant trading data supplier and most of data can be use for free.
   We process data and add some indicators by `stockstats` python package.
   Here is an example of coding in `Tushare_Coding.ipynb` file you can get a view.
 
-## Two Stock Portfolio Variance Example
+## Two Stocks Portfolio Variance Example
   Here is an example `portfolio_variance.ipynb` file to familiar how to code to calculte variance by Math Concept which display in the last institution.
 
 ## PCA as a risk model
@@ -23,7 +32,7 @@ There are many indicators can be calculated to estimate performance of the facto
   Here is an example `alphalens_coding.ipynb` file to show you how to use `alphalens` python package ti implement these method.
  
  ## Alpha Factors Implementation by Paper
- At last, we pick up four acdemic paper research on alpha factors to implement. The code file is `Alpha_on_Paper.ipynb`, Also there is another optional choice to view a custom factor created by mine. The performance you guess what?
+ At last, we pick up four acdemic paper research on alpha factors to implement as this project final goal, The code file is `Alpha_on_Paper.ipynb`, Also there is another optional choice to view a custom factor created by mine. The performance you guess what?
  
  [Overnight Returns and Firm-Specific Investor Sentiment](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2554010)
  
