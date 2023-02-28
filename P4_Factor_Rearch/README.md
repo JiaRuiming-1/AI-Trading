@@ -6,9 +6,11 @@ This project contains 5 seperate knowledge sections needed to be described in de
 4. Construct factor and estimate performance of factor by alphens package
 5. Appendix some math concept about how to calculate portfolio variance
 
-After master abvoe knowledge, we consturct some factors by academic paper(net address display below) and construct our portfolio. 
-We will estimate this portfolio variace by PCA and use convex optimization method to get portfolio weights.
+After master abvoe knowledge, we consturct some factors by academic paper(net address display below) and make up our portfolio. 
+We will estimate this portfolio variace by PCA
 We will estimate alpha factor return by alphalens and analysis the performance of these factors.
+We can combine some factors and use convex optimization method to get portfolio weights.
+So far, we don't eager to backtest this portfolio and got final return. After we learn more about ML method to combine factors we will involve to backtest.
 
 ## Get Date
   We load data from [Tushare](https://tushare.pro/) platform, which is a quant trading data supplier and most of data can be use for free.
