@@ -20,7 +20,7 @@ The main code in `complete_knowedge_utilization.ipynb`
   Here is an example of coding in `Tushare_Coding.ipynb` file you can get a view.
 
 ## Two Stocks Portfolio Variance Example
-  Here is an example `portfolio_variance.ipynb` file to familiar how to code to calculte variance by Math Concept which display in the last institution.
+  Here is an example `portfolio_variance.ipynb` file to familiar how to code to calculte variance by Math Concept which display at last.
 
 ## PCA as a risk model
   Sometimes, to calculate variance of portfolio easily traped into dimensional disaster. PCA is a way to solve this problem. It can estimate portfolio risk   by principle component variance of projection so that successed to got dimensionality reduction.
