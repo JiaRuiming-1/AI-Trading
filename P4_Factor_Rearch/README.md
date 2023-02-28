@@ -1,5 +1,5 @@
 ## Project Instruction
-This project contains 5 seperate knowledge sections needed to be described in detial. 
+This project contains 5 seperate knowledge sections which involve the knowedge about this project need to be described in detial first: 
 1. Doload stock data from Tushare and add some indicators.
 2. Calculate two stocks portfolio variance as an example to familiar math concepts.
 3. Estimate portfolio variance by PCA
