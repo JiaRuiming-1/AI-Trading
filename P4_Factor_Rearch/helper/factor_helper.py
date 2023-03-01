@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
+import stockstats
 
 class AverageByWindow(pd.DataFrame):
     """
@@ -45,10 +47,41 @@ class AverageByWindow(pd.DataFrame):
         stocks_name = df.index.values
         return self.df.loc[self.df[ticker_column].isin(stocks_name)]
 
-if __name__ == '__main__':
-    df = pd.read_csv('eod-quotemedia.csv')
-    df['date'] = pd.to_datetime(df['date'])
-    df.set_index('date')
-    df = AverageByWindow(df.drop_duplicates(), use_columns=['adj_volume'], window_length=120)
-    pool = df.top(50, 'ticker', 'adj_volume_120average')
-    print(pool)
+class IndicatorHelper(pd.DataFrame):
+    def __init__(self, data):
+        super(IndicatorHelper, self).__init__(data)
+
+    def add_technical_indicator(self, tech_indeicator_list, unique_ticker):
+        """
+        calculate technical indicators
+        use stockstats package to add technical inidactors
+        :param ticker: (df) pandas dataframe
+        :param tech_indeicator_list list
+        :return: (df) pandas dataframe
+        """
+        df = self.sort_values(by=["ts_code", "date"])
+        stock = stockstats.StockDataFrame.retype(df.copy())
+
+    def add_by_basetable(self, ticker_column, base_table, add_columns):
+        '''
+        add base indicator from base_table by tushare. example industry, pe etc.
+        base table like:
+        =======================
+        ticker industry  pe
+        A      economic  10.1
+        B      food      22,2
+        B      service   33.3
+        =======================
+        :param (str) ticker_column: the name of ticker column name
+        :param (dataframe) base_table: basic message table
+        :param (list) base_table: add what attributes to new dataframe eg: ['industry', 'pe']
+        :return:(dataframe) dataframe with added indicator
+        '''
+        df_new = pd.DataFrame()
+        for ts_code in tqdm(self[ticker_column].unique(), desc='ticker/tickers'):
+            tmp = self.loc[self[ticker_column] == ts_code]
+            tmp[add_columns] = base_table.loc[base_table[ticker_column] == ts_code][add_columns].values[0]
+            df_new = df_new.append(tmp)
+        return df_new
+
+
