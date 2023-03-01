@@ -51,6 +51,8 @@ class IndicatorHelper(pd.DataFrame):
     def __init__(self, data):
         super(IndicatorHelper, self).__init__(data)
 
+        self.stocks = stockstats.StockDataFrame.retype(self.copy())
+
     def add_technical_indicator(self, tech_indeicator_list, unique_ticker):
         """
         calculate technical indicators
@@ -59,8 +61,7 @@ class IndicatorHelper(pd.DataFrame):
         :param tech_indeicator_list list
         :return: (df) pandas dataframe
         """
-        df = self.sort_values(by=["ts_code", "date"])
-        stock = stockstats.StockDataFrame.retype(df.copy())
+        df = self.stocks.sort_values(by=["ts_code", "date"])
 
     def add_by_basetable(self, ticker_column, base_table, add_columns):
         '''
