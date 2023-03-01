@@ -21,18 +21,20 @@ class AverageByWindow(pd.DataFrame):
         else:
             self.use_column = use_columns
 
-        self.df = self[self.use_column].rolling(window = window_length).mean()
+    def add_average_indicators(self):
+        '''
+        add sma to indicate columns
+        :return:
+        '''
+        self.df = self[self.use_column].rolling(window=self.window_length).mean()
         new_cols = self.columns.values.copy()
         for col in self.use_column:
-            new_cols = np.append(new_cols,[col+'_'+str(window_length)+'average'])
-        self.df = pd.concat([self, self.df],axis=1)
+            new_cols = np.append(new_cols, [col + '_' + str(self.window_length) + 'sma'])
+        self.df = pd.concat([self, self.df], axis=1)
         self.df.columns = new_cols
-        #self = self.merge(self.df[["ts_code", "date", indicator]], on=["ts_code", "date"], how="left")
-
-    def add_indicators(self):
         return self.df
 
-    def top(self, num, ticker_column, value_column):
+    def top(self, num, index, ticker_column, value_column):
         '''
         pick up top number of tickers which indicated by column sum value
 
@@ -41,19 +43,27 @@ class AverageByWindow(pd.DataFrame):
         :param value_column: (str) column name to rank
         :return: top number tickers dataframe
         '''
-        self.df = self.df[self.window_lenth:]
-        df = self.df.pivot(index='date', columns=ticker_column, values=value_column).fillna(0)
+        df = self.pivot(index=index, columns=ticker_column, values=value_column).fillna(0)
         df = df.sum(axis=0).sort_values(ascending=False)[:num]
         stocks_name = df.index.values
-        return self.df.loc[self.df[ticker_column].isin(stocks_name)]
+        return self.loc[self[ticker_column].isin(stocks_name)]
+
 
 class IndicatorHelper(pd.DataFrame):
+    """
+        add indicators to dataframe
+
+        Parameters
+        ----------
+        data : DateFrame
+    """
+
     def __init__(self, data):
-        super(IndicatorHelper, self).__init__(data)
-
+        super(IndicatorHelper, self).__init__(self._process_data(data))
         self.stocks = stockstats.StockDataFrame.retype(self.copy())
+        self.df = self.copy()
 
-    def add_technical_indicator(self, tech_indeicator_list, unique_ticker):
+    def add_technical_indicator(self, tech_indicator_list):
         """
         calculate technical indicators
         use stockstats package to add technical inidactors
@@ -61,11 +71,25 @@ class IndicatorHelper(pd.DataFrame):
         :param tech_indeicator_list list
         :return: (df) pandas dataframe
         """
-        df = self.stocks.sort_values(by=["ts_code", "date"])
+        self.df = self.df.sort_values(by=["ts_code", "date"])
+        unique_ticker = self.df.ts_code.unique()
+
+        indicator_df = pd.DataFrame()
+        for i in tqdm(range(len(unique_ticker)), desc='add tech indicators'):
+            temp_indicator = self.stocks[self.stocks.ts_code == unique_ticker[i]][tech_indicator_list]
+            temp_indicator = pd.DataFrame(temp_indicator)
+            temp_indicator["ts_code"] = unique_ticker[i]
+            temp_indicator["date"] = self.df[self.df.ts_code == unique_ticker[i]]["date"].to_list()
+            temp_indicator.fillna(method='backfill', inplace=True)
+            indicator_df = indicator_df.append(temp_indicator, ignore_index=True)
+
+        self.df = self.df.merge(indicator_df[["ts_code", "date"]+ tech_indicator_list], on=["ts_code", "date"], how="left")
+        self.df = self.df.sort_values(by=["date", "ts_code"])
+        return self.df
 
     def add_by_basetable(self, ticker_column, base_table, add_columns):
         '''
-        add base indicator from base_table by tushare. example industry, pe etc.
+        add base common indicator from base_table. example industry, area. name etc.
         base table like:
         =======================
         ticker industry  pe
@@ -78,11 +102,42 @@ class IndicatorHelper(pd.DataFrame):
         :param (list) base_table: add what attributes to new dataframe eg: ['industry', 'pe']
         :return:(dataframe) dataframe with added indicator
         '''
-        df_new = pd.DataFrame()
-        for ts_code in tqdm(self[ticker_column].unique(), desc='ticker/tickers'):
-            tmp = self.loc[self[ticker_column] == ts_code]
+        df = pd.DataFrame()
+        for ts_code in tqdm(self[ticker_column].unique(), desc='add fundamental info'):
+            tmp = self.df.loc[self.df[ticker_column] == ts_code]
             tmp[add_columns] = base_table.loc[base_table[ticker_column] == ts_code][add_columns].values[0]
-            df_new = df_new.append(tmp)
-        return df_new
+            df = df.append(tmp)
 
+        self.df = self.df.merge(df[["ts_code", "date"] + add_columns], on=["ts_code", "date"],how="left")
+        self.df = self.df.sort_values(by=["date", "ts_code"])
+        return self.df
 
+    def _process_data(self, data):
+        '''
+        process date as date time type and order by time
+        :return:
+        '''
+        universe = data.sort_index(axis=0, ascending=False)
+        # convert date to standard string format, easy to filter
+        universe["date"] = pd.to_datetime(universe["trade_date"], format='%Y%m%d')
+        universe["date"] = universe.date.apply(lambda x: x.strftime("%Y-%m-%d"))
+        # drop missing data
+        universe = universe.dropna()
+        universe = universe.sort_values(by=["date", "ts_code"]).reset_index(drop=True)
+        universe['date'] = pd.to_datetime(universe['date'])
+        return universe
+
+if __name__ == '__main__':
+    # load data from csv
+    universe = pd.read_csv('../20180101-20210101.csv').iloc[:, 1:]
+    fundamental = pd.read_csv('../fundamental_20180101.csv').iloc[:, 1:]
+
+    universe = AverageByWindow(universe)
+    universe = universe.top(500, index='trade_date', ticker_column='ts_code', value_column='ma_v_120')
+
+    universe = IndicatorHelper(universe)
+    # tech_indicator_list = ['boll_ub','boll_lb']
+    # universe = universe.add_technical_indicator(tech_indicator_list)
+    universe = universe.add_by_basetable('ts_code', fundamental, ['industry', 'name'])
+    pd.read_csv()
+    print(universe)
