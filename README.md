@@ -5,7 +5,6 @@ This repository is some artifical intelligence or other mathmatic method and mes
     ├── p1_xxx/             # Code and conclusion for projects
     ├── p ..../
     ├── p8_xxx/
-    ├── option/              # Other method would be mentioned in project
     ├── requierments.txt     # Common packages used for projects and quizzes
 ## Environment
 Anconda 4.10.3
