@@ -171,7 +171,7 @@ class WinnerAndLoser(pd.DataFrame):
         tmp_df = self.copy()[['date', 'ts_code', 'pct_chg']]
         tmp_df['t_dir'] = (self.date - pd.Timestamp("1990-01-01")) / (pd.Timedelta('1d') * 1000)
         tmp_df['t_velocity'] = tmp_df['t_dir'] ** 2
-        tmp_df = tmp_df.apply(lambda x: self._regression(x), axis=1)
+        tmp_df = tmp_df.apply(self._regression, axis=1)
         self.df['win_lose'] = tmp_df['win_lose']
         return  self
 
