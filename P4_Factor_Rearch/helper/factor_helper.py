@@ -18,6 +18,7 @@ class IndicatorHelper(pd.DataFrame):
 
     def __init__(self, data):
         super(IndicatorHelper, self).__init__(self._process_data(data))
+
         self.stocks = stockstats.StockDataFrame.retype(self.copy())
         self.df = self
 
@@ -61,7 +62,7 @@ class IndicatorHelper(pd.DataFrame):
         :return:(dataframe) dataframe with added indicator
         '''
         df = pd.DataFrame()
-        for ts_code in tqdm(self[ticker_column].unique(), desc='add fundamental info'):
+        for ts_code in tqdm(self.df[ticker_column].unique(), desc='add fundamental info'):
             tmp = self.df.loc[self.df[ticker_column] == ts_code]
             tmp[add_columns] = base_table.loc[base_table[ticker_column] == ts_code][add_columns].values[0]
             df = df.append(tmp)
@@ -82,7 +83,9 @@ class IndicatorHelper(pd.DataFrame):
         df = self.df.pivot(index=index, columns=ticker_column, values=value_column).fillna(0)
         df = df.sum(axis=0).sort_values(ascending=False)[:num]
         stocks_name = df.index.values
-        return self.df.loc[self.df[ticker_column].isin(stocks_name)]
+        self.df = self.df.loc[self.df[ticker_column].isin(stocks_name)]
+        # self.stocks = stockstats.StockDataFrame.retype(self.df.copy())
+        return self.df
 
     def _process_data(self, data):
         '''
@@ -136,7 +139,7 @@ class CloseToOpen(pd.DataFrame):
         return self.df
 
 
-class WinerAndLoser(pd.DataFrame):
+class WinnerAndLoser(pd.DataFrame):
     """
         Winner and Loser Factor Constructor
 
@@ -145,7 +148,7 @@ class WinerAndLoser(pd.DataFrame):
         data : DateFrame
     """
     def __init__(self,data):
-        super(WinerAndLoser, self).__init__(data)
+        super(WinnerAndLoser, self).__init__(data)
         self.df = self
 
     def _regression(self, data):
@@ -203,6 +206,45 @@ class SkewandMomentum(pd.DataFrame):
             stock.fillna(method='backfill', inplace=True)
             tmp_df = tmp_df.append(stock)
         self.df = self.df.merge(tmp_df[["ts_code", "date", "skew_momentum"]], on=["ts_code", "date"], how="left")
+        self.df = self.df.sort_values(by=["date", "ts_code"])
+        return self
+
+    def get_factor(self):
+        return self.df
+
+
+class BollingerAndResidual(pd.DataFrame):
+    """
+        Custom Factor Constructor
+
+        Parameters
+        ----------
+        data : DateFrame
+        residuals : DateFrame
+    """
+    def __init__(self,data, residuals):
+        super(BollingerAndResidual, self).__init__(data)
+        self.df = self
+        self.residuals = residuals
+
+    def calculate(self):
+        '''
+        factor = (boll_ub + boll_lb - 2 * close) * residuals / 1000
+        add facotor to colomns
+        :return: dataframe
+        '''
+        self.df = self.df.sort_values(by=["ts_code", "date"])
+        unique_ticker = self.df.ts_code.unique()
+
+        factor_df = pd.DataFrame()
+        for ticker in tqdm(unique_ticker, desc='custom factor'):
+            tmp_df = self.df.loc[self.df.ts_code == ticker][['ts_code', 'date', 'boll_ub','boll_lb','close']]
+            residual = self.residuals.loc[self.residuals.index==ticker].values[0]
+            tmp_df['custom_factor'] = (tmp_df['boll_ub'] + tmp_df['boll_lb'] - 2 * tmp_df['close']) \
+                                      * residual / 1000
+            factor_df = factor_df.append(tmp_df)
+
+        self.df = self.df.merge(factor_df[["ts_code", "date", "custom_factor"]], on=["ts_code", "date"], how="left")
         self.df = self.df.sort_values(by=["date", "ts_code"])
         return self
 
