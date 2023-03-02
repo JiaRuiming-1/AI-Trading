@@ -2,52 +2,10 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import stockstats
+import statsmodels.formula.api as sfa
 
-class AverageByWindow(pd.DataFrame):
-    """
-        average dollar volume in indicate time widow
-
-        Parameters
-        ----------
-        data : DateFrame
-        win_lenth: averge time window lenth
-        use_columns:[str] what columns will be calculated in window
-    """
-    def __init__(self,data, use_columns = [], window_length = 1):
-        super(AverageByWindow, self).__init__(data)
-        self.window_lenth = window_length
-        if len(use_columns) == 0:
-            self.use_column = self.columns
-        else:
-            self.use_column = use_columns
-
-    def add_average_indicators(self):
-        '''
-        add sma to indicate columns
-        :return:
-        '''
-        self.df = self[self.use_column].rolling(window=self.window_length).mean()
-        new_cols = self.columns.values.copy()
-        for col in self.use_column:
-            new_cols = np.append(new_cols, [col + '_' + str(self.window_length) + 'sma'])
-        self.df = pd.concat([self, self.df], axis=1)
-        self.df.columns = new_cols
-        return self.df
-
-    def top(self, num, index, ticker_column, value_column):
-        '''
-        pick up top number of tickers which indicated by column sum value
-
-        :param num: (integer) how many tickers return
-        :param ticker_column: (str) which column name to get tickers name
-        :param value_column: (str) column name to rank
-        :return: top number tickers dataframe
-        '''
-        df = self.pivot(index=index, columns=ticker_column, values=value_column).fillna(0)
-        df = df.sum(axis=0).sort_values(ascending=False)[:num]
-        stocks_name = df.index.values
-        return self.loc[self[ticker_column].isin(stocks_name)]
-
+import warnings
+warnings.filterwarnings('ignore')
 
 class IndicatorHelper(pd.DataFrame):
     """
@@ -61,7 +19,7 @@ class IndicatorHelper(pd.DataFrame):
     def __init__(self, data):
         super(IndicatorHelper, self).__init__(self._process_data(data))
         self.stocks = stockstats.StockDataFrame.retype(self.copy())
-        self.df = self.copy()
+        self.df = self
 
     def add_technical_indicator(self, tech_indicator_list):
         """
@@ -112,10 +70,24 @@ class IndicatorHelper(pd.DataFrame):
         self.df = self.df.sort_values(by=["date", "ts_code"])
         return self.df
 
+    def top(self, num, index, ticker_column, value_column):
+        '''
+        pick up top number of tickers which indicated by column sum value
+
+        :param num: (integer) how many tickers return
+        :param ticker_column: (str) which column name to get tickers name
+        :param value_column: (str) column name to rank
+        :return: top number tickers dataframe
+        '''
+        df = self.df.pivot(index=index, columns=ticker_column, values=value_column).fillna(0)
+        df = df.sum(axis=0).sort_values(ascending=False)[:num]
+        stocks_name = df.index.values
+        return self.df.loc[self.df[ticker_column].isin(stocks_name)]
+
     def _process_data(self, data):
         '''
         process date as date time type and order by time
-        :return:
+        :return: processed data
         '''
         universe = data.sort_index(axis=0, ascending=False)
         # convert date to standard string format, easy to filter
@@ -127,17 +99,112 @@ class IndicatorHelper(pd.DataFrame):
         universe['date'] = pd.to_datetime(universe['date'])
         return universe
 
-if __name__ == '__main__':
-    # load data from csv
-    universe = pd.read_csv('../20180101-20210101.csv').iloc[:, 1:]
-    fundamental = pd.read_csv('../fundamental_20180101.csv').iloc[:, 1:]
+class CloseToOpen(pd.DataFrame):
+    """
+        Overnight Return Factor Constructor
 
-    universe = AverageByWindow(universe)
-    universe = universe.top(500, index='trade_date', ticker_column='ts_code', value_column='ma_v_120')
+        Parameters
+        ----------
+        data : DateFrame
+    """
+    def __init__(self,data):
+        super(CloseToOpen, self).__init__(data)
+        self.df = self
 
-    universe = IndicatorHelper(universe)
-    # tech_indicator_list = ['boll_ub','boll_lb']
-    # universe = universe.add_technical_indicator(tech_indicator_list)
-    universe = universe.add_by_basetable('ts_code', fundamental, ['industry', 'name'])
-    pd.read_csv()
-    print(universe)
+    def calculate(self):
+        '''
+        add open-close as a column named close_to_return
+        :return: dataframe
+        '''
+        tmp_df = pd.DataFrame()
+        for stock_tuple in tqdm(self.groupby('ts_code'), desc='close_to_open'):
+            stock = stock_tuple[1]
+            stock['close_to_open'] = (stock['open'].shift(-1).fillna(method='backfill') - stock['close'])/stock['close']
+            stock.fillna(method='ffill', inplace=True)
+            tmp_df = tmp_df.append(stock)
+        self.df = self.df.merge(tmp_df[["ts_code", "date", "close_to_open"]], on=["ts_code", "date"], how="left")
+        return self
+
+    def get_factors(self):
+        '''
+        calculate close_to_open_5_sma, close_to_open_25_sma by Indicator Helper class
+        :return: Dateframe
+        '''
+        ind_helper = IndicatorHelper(self.df)
+        self.df = ind_helper.add_technical_indicator(['close_to_open_5_sma', 'close_to_open_25_sma'])
+        self.df['close_to_open_25_sma'] = - self.df['close_to_open_25_sma']
+        return self.df
+
+
+class WinerAndLoser(pd.DataFrame):
+    """
+        Winner and Loser Factor Constructor
+
+        Parameters
+        ----------
+        data : DateFrame
+    """
+    def __init__(self,data):
+        super(WinerAndLoser, self).__init__(data)
+        self.df = self
+
+    def _regression(self, data):
+        regression = sfa.ols(formula='pct_chg ~ t_dir + t_velocity', data=data)
+        model = regression.fit()
+        data['win_lose'] = model.params.t_dir * abs(model.params.t_velocity)
+        print('\r processing factors step/total {}/{}'.format(self.count, self.shape[0]), end='')
+        self.count += 1
+        return  data
+
+
+    def calculate(self):
+        '''
+        convert time to value
+        regress return to get mu and beta each time
+        add facotor mu*beta to colomns
+        :return: dataframe
+        '''
+        self.count = 1
+        tmp_df = self.copy()[['date', 'ts_code', 'pct_chg']]
+        tmp_df['t_dir'] = (self.date - pd.Timestamp("1990-01-01")) / (pd.Timedelta('1d') * 1000)
+        tmp_df['t_velocity'] = tmp_df['t_dir'] ** 2
+        tmp_df = tmp_df.apply(lambda x: self._regression(x), axis=1)
+        self.df['win_lose'] = tmp_df['win_lose']
+        return  self
+
+    def get_factor(self):
+        return self.df
+
+
+class SkewandMomentum(pd.DataFrame):
+    """
+        Expected Skewness and Momentum Factor Constructor
+
+        Parameters
+        ----------
+        data : DateFrame
+    """
+    def __init__(self,data):
+        super(SkewandMomentum, self).__init__(data)
+        self.df = self
+
+    def calculate(self):
+        '''
+        convert time to value
+        regress return to get mu and beta each time
+        add facotor mu*beta to colomns
+        :return: dataframe
+        '''
+        tmp_df = pd.DataFrame()
+        for stock_tuple in tqdm(self.groupby('ts_code'), desc='skew and momentum'):
+            stock = stock_tuple[1]
+            roll_obj = stock.rolling(20)['pct_chg']
+            stock['skew_momentum'] = roll_obj.skew() * roll_obj.median(axis=0)
+            stock.fillna(method='backfill', inplace=True)
+            tmp_df = tmp_df.append(stock)
+        self.df = self.df.merge(tmp_df[["ts_code", "date", "skew_momentum"]], on=["ts_code", "date"], how="left")
+        self.df = self.df.sort_values(by=["date", "ts_code"])
+        return self
+
+    def get_factor(self):
+        return self.df
