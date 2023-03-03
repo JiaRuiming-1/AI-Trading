@@ -24,7 +24,6 @@ class AbstractOptimalHoldings(ABC):
 
     def find(self, alpha_vector, factor_betas, factor_cov_matrix, idiosyncratic_var_vector):
         weights = cvx.Variable(len(alpha_vector))
-        print(len(alpha_vector))
 
         risk = self._get_risk(weights, factor_betas, alpha_vector.index, factor_cov_matrix, idiosyncratic_var_vector)
 
@@ -32,8 +31,8 @@ class AbstractOptimalHoldings(ABC):
         constraints = self._get_constraints(weights, factor_betas.loc[alpha_vector.index].values, risk)
 
         prob = cvx.Problem(obj, constraints)
-        # prob.solve(max_iters=500)
-        prob.solve()
+        prob.solve(max_iters=500)
+        # prob.solve()
 
         optimal_weights = np.asarray(weights.value).flatten()
         return pd.DataFrame(data=optimal_weights, index=alpha_vector.index)
@@ -57,22 +56,12 @@ class OptimalHoldings(AbstractOptimalHoldings):
 
         return constraint
 
-    def __init__(self, risk_cap=0.1, factor_max=10.0, factor_min=-10.0, weights_max=0.75, weights_min=-0.75):
+    def __init__(self, risk_cap=0.1, factor_max=10.0, factor_min=-10.0, weights_max=0.65, weights_min=-0.65):
         self.risk_cap = risk_cap
         self.factor_max = factor_max
         self.factor_min = factor_min
         self.weights_max = weights_max
         self.weights_min = weights_min
-
-
-
-'''
-Optimize with a Regularization Parameter
-In order to enforce diversification, we'll use regularization in the objective function. 
-We'll create a new class called OptimalHoldingsRegualization which gets its constraints from the OptimalHoldings class.
-In this new class, implement the _get_obj function to return a CVXPY objective 
-function that maximize  𝛼𝑇∗𝑥+𝜆‖𝑥‖2 , where  𝑥  is the portfolio weights,  𝛼  is the alpha vector, and  𝜆  is the regularization parameter.
-'''
 
 
 class OptimalHoldingsRegualization(OptimalHoldings):
@@ -103,14 +92,6 @@ class OptimalHoldingsRegualization(OptimalHoldings):
         self.weights_max = weights_max
         self.weights_min = weights_min
 
-
-'''
-Optimize with a Strict Factor Constraints and Target Weighting
-Another common formulation is to take a predefined target weighting,  
-𝑥∗  (e.g., a quantile portfolio), and solve to get as close to that portfolio while respecting portfolio-level constraints. 
-For this next class, OptimalHoldingsStrictFactor, you'll implement the _get_obj function to minimize on  ‖𝑥−𝑥∗‖2 , 
-where  𝑥  is the portfolio weights  𝑥∗  is the target weighting.
-'''
 
 class OptimalHoldingsStrictFactor(OptimalHoldings):
     def _get_obj(self, weights, alpha_vector):

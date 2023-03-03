@@ -97,7 +97,6 @@ class IndicatorHelper(pd.DataFrame):
         universe["date"] = pd.to_datetime(universe["trade_date"], format='%Y%m%d')
         universe["date"] = universe.date.apply(lambda x: x.strftime("%Y-%m-%d"))
         # drop missing data
-        universe = universe.dropna()
         universe = universe.sort_values(by=["date", "ts_code"]).reset_index(drop=True)
         universe['date'] = pd.to_datetime(universe['date'])
         return universe
@@ -147,17 +146,19 @@ class WinnerAndLoser(pd.DataFrame):
         ----------
         data : DateFrame
     """
-    def __init__(self,data):
+    def __init__(self,data, win_length=60):
         super(WinnerAndLoser, self).__init__(data)
         self.df = self
+        self.win_lenth = win_length
 
     def _regression(self, data):
-        regression = sfa.ols(formula='pct_chg ~ t_dir + t_velocity', data=data)
+        df = pd.DataFrame(data, columns=['pct_chg'])
+        df['t_dir'] = np.arange(self.win_lenth)+1
+        df['t_velocity'] = df['t_dir'] ** 2
+        regression = sfa.ols(formula='pct_chg ~ t_dir + t_velocity', data=df)
         model = regression.fit()
         data['win_lose'] = model.params.t_dir * abs(model.params.t_velocity)
-        print('\r processing factors step/total {}/{}'.format(self.count, self.shape[0]), end='')
-        self.count += 1
-        return  data
+        return  data['win_lose']
 
 
     def calculate(self):
@@ -167,12 +168,13 @@ class WinnerAndLoser(pd.DataFrame):
         add facotor mu*beta to colomns
         :return: dataframe
         '''
-        self.count = 1
-        tmp_df = self.copy()[['date', 'ts_code', 'pct_chg']]
-        tmp_df['t_dir'] = (self.date - pd.Timestamp("1990-01-01")) / (pd.Timedelta('1d') * 1000)
-        tmp_df['t_velocity'] = tmp_df['t_dir'] ** 2
-        tmp_df = tmp_df.apply(self._regression, axis=1)
-        self.df['win_lose'] = tmp_df['win_lose']
+        tickers = self.df.ts_code.unique()
+        factor_df = pd.DataFrame()
+        for ticker in tqdm(tickers, desc='win and lose'):
+            tmp_df = self.df.loc[self.df.ts_code == ticker][['date', 'ts_code', 'pct_chg']]
+            tmp_df['win_lose'] = tmp_df['pct_chg'].rolling(self.win_lenth).apply(self._regression)
+            factor_df = factor_df.append(tmp_df)
+        self.df = self.df.merge(factor_df[["ts_code", "date", "win_lose"]], on=["ts_code", "date"], how="left")
         return  self
 
     def get_factor(self):
@@ -186,10 +188,13 @@ class SkewandMomentum(pd.DataFrame):
         Parameters
         ----------
         data : DateFrame
+        win_lenth: int
+            the rolling window length of days
     """
-    def __init__(self,data):
+    def __init__(self,data, win_length):
         super(SkewandMomentum, self).__init__(data)
         self.df = self
+        self.win_length = win_length
 
     def calculate(self):
         '''
@@ -201,9 +206,8 @@ class SkewandMomentum(pd.DataFrame):
         tmp_df = pd.DataFrame()
         for stock_tuple in tqdm(self.groupby('ts_code'), desc='skew and momentum'):
             stock = stock_tuple[1]
-            roll_obj = stock.rolling(20)['pct_chg']
+            roll_obj = stock.rolling(self.win_length)['pct_chg']
             stock['skew_momentum'] = roll_obj.skew() * roll_obj.median(axis=0)
-            stock.fillna(method='backfill', inplace=True)
             tmp_df = tmp_df.append(stock)
         self.df = self.df.merge(tmp_df[["ts_code", "date", "skew_momentum"]], on=["ts_code", "date"], how="left")
         self.df = self.df.sort_values(by=["date", "ts_code"])
@@ -213,19 +217,17 @@ class SkewandMomentum(pd.DataFrame):
         return self.df
 
 
-class BollingerAndResidual(pd.DataFrame):
+class BollingerAndClose(pd.DataFrame):
     """
         Custom Factor Constructor
 
         Parameters
         ----------
         data : DateFrame
-        residuals : DateFrame
     """
-    def __init__(self,data, residuals):
-        super(BollingerAndResidual, self).__init__(data)
+    def __init__(self,data):
+        super(BollingerAndClose, self).__init__(data)
         self.df = self
-        self.residuals = residuals
 
     def calculate(self):
         '''
@@ -238,10 +240,8 @@ class BollingerAndResidual(pd.DataFrame):
 
         factor_df = pd.DataFrame()
         for ticker in tqdm(unique_ticker, desc='custom factor'):
-            tmp_df = self.df.loc[self.df.ts_code == ticker][['ts_code', 'date', 'boll_ub','boll_lb','close']]
-            residual = self.residuals.loc[self.residuals.index==ticker].values[0]
-            tmp_df['custom_factor'] = (tmp_df['boll_ub'] + tmp_df['boll_lb'] - 2 * tmp_df['close']) \
-                                      * residual / 1000
+            tmp_df = self.df.loc[self.df.ts_code == ticker][['ts_code', 'date', 'boll_ub','boll_lb','boll','close']]
+            tmp_df['custom_factor'] = (tmp_df['boll_lb'] - tmp_df['close'])
             factor_df = factor_df.append(tmp_df)
 
         self.df = self.df.merge(factor_df[["ts_code", "date", "custom_factor"]], on=["ts_code", "date"], how="left")
@@ -250,3 +250,47 @@ class BollingerAndResidual(pd.DataFrame):
 
     def get_factor(self):
         return self.df
+
+
+class FatherFactor(pd.DataFrame):
+    """
+        The factor created by my father
+
+        Parameters
+        ----------
+        data : DateFrame
+        win_lenth: int
+            the rolling window length of days
+    """
+    def __init__(self,data, win_length):
+        super(FatherFactor, self).__init__(data)
+        self.df = self
+        self.win_length = win_length
+
+    def calculate(self):
+        '''
+        abs(market cap - 2.5 billion) close to 0
+        abs((max price - now price)/ max price) - 70%) close to 0
+        abs((now price - begin price)) close to 0
+        abs(std(amount_120_sma) - 2%) close to 0
+
+        :return: dataframe
+        '''
+
+        return self
+
+    def get_factor(self):
+        return self.df
+
+
+if __name__ == '__main__':
+    universe_raw = pd.read_csv('../20180101-20210101.csv').iloc[:, 1:]
+    tickers = universe_raw['ts_code'].unique()[:4]
+    universe = universe_raw.loc[universe_raw.ts_code.isin(tickers)]
+
+    universe = IndicatorHelper(universe)
+
+    wl = WinnerAndLoser(universe, win_length=120).calculate()
+    universe = wl.get_factor()
+
+    print(universe)
