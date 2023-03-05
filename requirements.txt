@@ -1,5 +1,6 @@
 alphalens
 beautifulsoup4
+cnsenti
 colour
 cvxpy
 box2d-py=2.3.5
@@ -20,6 +21,7 @@ nltk
 numpy=1.21.6
 pandas=1.3.5
 Pillow=9.4.0
+pkuseg
 plotly
 progressbar
 protobuf=3.19.6
