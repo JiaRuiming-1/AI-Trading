@@ -11,4 +11,14 @@ In this section, I will construct a simple model to analysis the sentiment consi
   4. As the conclusion, I found that the larger cosistency sentiment value, the higher the company's market cap.
 
 ## Concepts
- 
+NLP Data process step below: 
+
+Note that, Chinese don't need to nomalized and Lemmatize. Chinese tokenize toolkit in python I apply is `pkuseg`, the stop words also apply `nltk`.
+
+<img src="images/1.jpg" width="500px">
+
+TF-IDF formula below:
+
+The TF means a word frequency of one document. The IDF means is the word is nomal. TF-IDF express the word importance in all documents. We can look as a weight of key-word
+
+<img src="images/2.jpg" width="500px">
