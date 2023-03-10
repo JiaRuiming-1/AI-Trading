@@ -1,7 +1,10 @@
 ## Project Instruction
-update later...
+This project seperate three sections.
+1. Familiar some tools of data clean and make up bag of words to predict sentiment of finacial satement by tf-idf and cosine_similarity methods.
+2. How to contruct or use pretrained model of Embeding+LSTM to predict text sentiment
+3. Familiar CNN model and transform learning.
 
-## Financial Sentiment Analysis
+## Financial Statement and Sentiment Analysis
 In this section, I will construct a simple model to analysis the sentiment consistency based on company year and half year financial reports. `NLP_on_Finacial_Statement
 .ipynb` is the source code, check it feel free.
 
