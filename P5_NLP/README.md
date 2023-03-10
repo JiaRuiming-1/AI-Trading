@@ -18,7 +18,7 @@ In this section, I wll introduce a NLP lib platform named `Paddlenlp`. Instead o
 
 This section code is in `PaddleNLP.ipynb` file. Even if we can use these model got high accuracy results, there is another option to check is an introduction of how to makeup an Embeding+LSTM model in `rnn_sentiment.ipynb` file.
 
-In addition, if you want to know some use of CNN and how to implement transform learning. You can check 'CNN_transform_leaning.ipynb' file. This file we download VGG16 as pretrained model and we replace last layer to a new fully connection layer to complete flower classifier.
+In addition, if you want to know some use of CNN and how to implement transform learning. You can check 'CNN_transform_leaning.ipynb' file. This file we download VGG16 as pretrained model and we replace last layer to a new fully connection layer to make up a complex classifier. Train model by transform leaning can get completed model very quickly.
 
 ## Concepts
 NLP Data process step below: 
