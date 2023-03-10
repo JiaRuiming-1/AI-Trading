@@ -2,7 +2,7 @@
 This project seperate three sections.
 1. Familiar some tools of data clean and make up bag of words to predict sentiment of finacial satement by tf-idf and cosine_similarity methods.
 2. How to contruct or use pretrained model of Embeding+LSTM to predict text sentiment
-3. Familiar CNN model and transform learning.
+3. Familiar CNN model and transfer learning.
 
 ## Financial Statement and Sentiment Analysis
 In this section, I will construct a simple model to analysis the sentiment consistency based on company year and half year financial reports. `NLP_on_Finacial_Statement
@@ -18,7 +18,7 @@ In this section, I wll introduce a NLP lib platform named `Paddlenlp`. Instead o
 
 This section code is in `PaddleNLP.ipynb` file. Even if we can use these model got high accuracy results, there is another option to check is an introduction of how to makeup an Embeding+LSTM model in `rnn_sentiment.ipynb` file.
 
-In addition, if you want to know some use of CNN and how to implement transform learning. You can check 'CNN_transform_leaning.ipynb' file. This file we download VGG16 as pretrained model and we replace last layer to a new fully connection layer to make up a complex classifier. Train model by transform leaning can get completed model very quickly.
+In addition, if you want to know some use of CNN and how to implement transfer learning. You can check 'VGG16_transfer_leaning.ipynb' file. This file we download VGG16 as pretrained model and we replace last layer to a new fully connection layer to make up a complex classifier. Train model by transform leaning can get completed model very quickly.
 
 ## Concepts
 NLP Data process step below: 
