@@ -13,7 +13,9 @@ In this section, I will construct a simple model to analysis the sentiment consi
 ## Sentiment Analysis Based on RNN
 In this section, I wll introduce a NLP lib platform named `Paddlenlp`. Instead of implementing a Embding+LSTM model, I prefer record how to use some pretrained models in this platform and pretrained model like BERT、ERNIE、ALBERT、RoBERTa、XLNet etc. had exists as a industry baseline to use.
 
-This section code is in `PaddleNLP.ipynb` file. Even if it doesn't involve rnn model, I will intro some concepts below.
+This section code is in `PaddleNLP.ipynb` file. Even if we can use these model got high accuracy results, there is another option to check is an introduction of how to makeup an Embeding+LSTM model in `rnn_sentiment.ipynb` file.
+
+In addition, if you want to know some use of CNN and how to implement transform learning. You can check 'CNN_transform_leaning.ipynb' file. This file we download VGG16 as pretrained model and we replace last layer to a new fully connection layer to complete flower classifier.
 
 ## Concepts
 NLP Data process step below: 
