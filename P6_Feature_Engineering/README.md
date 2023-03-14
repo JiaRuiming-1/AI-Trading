@@ -1,10 +1,10 @@
-## Project Instruction
+# Project Instruction
 In this project we mainly explore a kind of explainable mechine learning method called Decision Tree. It also has an advanced version named RandomForest. We will use it to choice alpha signals and explain which signal contributes most to predict returns
 
-## Rank Factor by Explain Model
+### Rank Factor by Explain Model
 I introduce some methods from Decision Tress use to RandomForest to explain model and rank them bettwen correlation and return. The code in `rank_features.ipynb` file
 
-## AI Factors
+### AI Factors
 In `RandomForest_Explainable_model.ipynb` project, we pick up some important alpha factors and combine them by AI method.
 
 1. Construct factor by zipline
