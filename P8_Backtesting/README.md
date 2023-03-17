@@ -3,4 +3,4 @@ In this project wo practice last step of quant research. The project well implem
 
 ## Example Demo
 This project contains some python package to use. Some simple example of utilizing below:
-`lbfgs_test.ipynb` is a example of scipy.optimize.fmin_l_bfgs_b using which is a convex optimization method run faster than cvxpy
+`lbfgs_test.ipynb` is an example of using scipy.optimize.fmin_l_bfgs_b which is a convex optimization method run faster than cvxpy
