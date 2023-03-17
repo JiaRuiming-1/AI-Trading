@@ -216,17 +216,15 @@ class SkewandMomentum(pd.DataFrame):
     def get_factor(self):
         return self.df
 
-
-class BollingerAndClose(pd.DataFrame):
+class SuperTrend(pd.DataFrame):
     """
         Custom Factor Constructor
-
         Parameters
         ----------
         data : DateFrame
     """
     def __init__(self,data):
-        super(BollingerAndClose, self).__init__(data)
+        super(SuperTrend, self).__init__(data)
         self.df = self
 
     def calculate(self):
@@ -240,17 +238,18 @@ class BollingerAndClose(pd.DataFrame):
 
         factor_df = pd.DataFrame()
         for ticker in tqdm(unique_ticker, desc='custom factor'):
-            tmp_df = self.df.loc[self.df.ts_code == ticker][['ts_code', 'date', 'boll_ub','boll_lb','boll','close']]
-            tmp_df['custom_factor'] = (tmp_df['boll_lb'] - tmp_df['close'])
+            tmp_df = self.df.loc[self.df.ts_code == ticker][['ts_code', 'date', 'close', 'supertrend_ub', 'supertrend_lb']]
+            up = tmp_df['close'] - tmp_df['supertrend_ub']
+            down =  tmp_df['close'] - tmp_df['supertrend_lb']
+            tmp_df['supertrend_factor'] = np.where(up > 0,up, np.where(down < 0 ,down, 0))
             factor_df = factor_df.append(tmp_df)
 
-        self.df = self.df.merge(factor_df[["ts_code", "date", "custom_factor"]], on=["ts_code", "date"], how="left")
+        self.df = self.df.merge(factor_df[["ts_code", "date", "supertrend_factor"]], on=["ts_code", "date"], how="left")
         self.df = self.df.sort_values(by=["date", "ts_code"])
         return self
 
     def get_factor(self):
         return self.df
-
 
 class FatherFactor(pd.DataFrame):
     """
