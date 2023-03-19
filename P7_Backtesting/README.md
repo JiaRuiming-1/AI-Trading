@@ -1,6 +1,11 @@
 ## Project Instrcution
-In this project wo practice last step of quant research. The project well implements all steps what I learned from make up factor to backtesting.
+In this project wo practice last step of quant trading. The project well implements all steps what I learned from make up factor to backtesting.
 
 ## Example Demo
-This project contains some python package to use. Some simple example of utilizing below:
-`lbfgs_test.ipynb` is an example of using scipy.optimize.fmin_l_bfgs_b which is a convex optimization method run faster than cvxpy
+`Backtesting.ipynb` is a simple example of backtesting. This demo step is:
+1. construct two stock based on sine and cosine data.
+2. make up some alpha factors as we knew it does work, like sine and cosine drivate functions.
+3. calculate portfolio by PCA
+4. optimize holding by `scipy.optimize.fmin_l_bfgs_b`
+5. evaluate exposure of factor and costs
+6. arrtibute profit and losts to factors costs and risk
