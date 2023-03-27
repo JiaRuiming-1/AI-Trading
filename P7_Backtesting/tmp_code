@@ -1,0 +1,20 @@
+def alpha_fundamental(df):
+    all_df = pd.DataFrame()
+    for ts_code in tqdm(df.ts_code.unique(), desc='fundamental factor'):
+        tmp = df.loc[df.ts_code==ts_code]
+        tmp['alpha_fundamental_a'] = tmp['revenue_ps']/tmp['close_5_sma']
+        tmp['alpha_mean'] = tmp['alpha_fundamental_a'].rolling(window=20).mean().fillna(method='bfill')
+        tmp['alpha_std'] = tmp['alpha_fundamental_a'].rolling(window=20).std().fillna(method='bfill')
+        tmp['alpha_fundamental_a'] = (tmp['alpha_fundamental_a']-tmp['alpha_mean'])/tmp['alpha_std']
+        
+        tmp['alpha_mean'] = (1/tmp['pe']).rolling(window=20).mean().fillna(method='bfill')
+        tmp['alpha_std'] = (1/tmp['pe']).rolling(window=20).std().fillna(method='bfill')
+        tmp['alpha_fundamental_b'] = (1/tmp['pe']-tmp['alpha_mean'])/tmp['alpha_std']
+        
+        tmp['alpha_fundamental'] = 0.7 * tmp['alpha_fundamental_a'] + 0.3 * tmp['alpha_fundamental_b']
+        all_df = all_df.append(tmp, ignore_index=True)
+        
+    df = df.merge(all_df[['ts_code','trade_date','alpha_fundamental']], on=['ts_code','trade_date'], how='left')
+    df['date'] = pd.to_datetime(df['trade_date'],format='%Y%m%d')
+    df = df.set_index(['date']).sort_values(by=['date'])
+    return df
