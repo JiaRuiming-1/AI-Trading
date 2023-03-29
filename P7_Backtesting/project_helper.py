@@ -130,6 +130,6 @@ def plot_factor_rank_autocorrelation(factor_data):
     ls_FRA.plot(title="Factor Rank Autocorrelation")
 
 
-def build_factor_data(factor_data, pricing):
-    return {factor_name: al.utils.get_clean_factor_and_forward_returns(factor=data, prices=pricing, periods=[1])
+def build_factor_data(factor_data, pricing, holding_time=5):
+    return {factor_name: al.utils.get_clean_factor_and_forward_returns(factor=data, prices=pricing, periods=[holding_time], max_loss=1.)
         for factor_name, data in factor_data.iteritems()}
