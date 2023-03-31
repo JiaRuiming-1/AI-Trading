@@ -133,3 +133,28 @@ def plot_factor_rank_autocorrelation(factor_data):
 def build_factor_data(factor_data, pricing, holding_time=5):
     return {factor_name: al.utils.get_clean_factor_and_forward_returns(factor=data, prices=pricing, periods=[holding_time], max_loss=1.)
         for factor_name, data in factor_data.iteritems()}
+
+
+# add KAMA alpha factor
+def KAMA_filter(df):    
+    unique_stocks = df.ts_code.unique()
+    all_df = pd.DataFrame()
+    for ts_code in tqdm(unique_stocks, desc='kama filter'):
+        tmp = df.loc[df.ts_code == ts_code]
+        tmp['kama_filter'] = tmp['close_10_kama_5_30'].rolling(window=20).std().fillna(method='bfill') 
+        tmp['kama_prior_1'] = tmp['close_10_kama_5_30'].shift(1).fillna(method='bfill')
+        tmp['kama_prior_2'] = tmp['close_10_kama_5_30'].shift(2).fillna(method='bfill')
+        #tmp['kama_prior_2'] = tmp['close_10_kama_5_30']
+        tmp['alpha_kama'] = (tmp['close_10_kama_5_30'] - tmp['kama_prior_1']) \
+                            + (tmp['kama_prior_1'] - tmp['kama_prior_2']) - tmp['kama_filter']
+        tmp['alpha_kama'] = tmp['alpha_kama']/ tmp['close_10_kama_5_30']
+        all_df = all_df.append(tmp[['ts_code','trade_date','alpha_kama']], ignore_index=True)
+    df = df.merge(all_df, on=['ts_code','trade_date'], how='left')
+    df['date'] = pd.to_datetime(df['trade_date'],format='%Y%m%d')
+    df = df.set_index(['date']).sort_values(by=['date'])
+    return df
+
+#temp = universe.loc[universe.ts_code=='603538.SH']
+#temp = KAMA_filter(temp)
+#universe = universe.drop(columns=['alpha_kama'])
+universe = KAMA_filter(universe)
