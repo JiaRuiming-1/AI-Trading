@@ -1,10 +1,29 @@
 import pandas as pd
 import numpy as np
 from scipy.stats import zscore, spearmanr, rankdata
+from statsmodels.formula.api import ols
 from tqdm import tqdm
 
 import warnings
 warnings.filterwarnings('ignore')
+
+def Getfama3factors(df, benchmark_return):
+    def cal_(df):
+        SMB = (df.loc[df['rsize'] <= 0.1]['log-ret'].sum() - df.loc[df['rsize'] >= 0.9]['log-ret'].sum()) / 3
+        HML = (df.loc[df['rvalue'] <= 0.3]['log-ret'].sum() - df.loc[df['rvalue'] >= 0.7]['log-ret'].sum()) / 2
+        return SMB, HML
+
+    df[['rsize', 'rvalue']] = df.groupby('trade_date')[['total_mv', 'pb']].rank(method='min', pct=True)
+    fama_df = pd.DataFrame(index=df.index.unique())
+    for dt in tqdm(fama_df.index):
+        tmp = df.loc[df.index == dt]
+        SMB, HML = cal_(tmp)
+        # fama_df.at[dt, 'trade_date'] = int(tmp.trade_date.unique()[0])
+        fama_df.at[dt, 'SMB'] = SMB
+        fama_df.at[dt, 'HML'] = HML
+        fama_df.at[dt, 'MKT'] = tmp['log-ret'].mean() - benchmark_return[dt]
+
+    return fama_df.fillna(0.)
 
 def Corr(data, win_len):
     obj = data.rolling(window=win_len, method='table')
@@ -36,11 +55,23 @@ def Regbeta(sr, x):
     window = len(x)
     return sr.rolling(window).apply(lambda y: np.polyfit(x, y, deg=1)[0])
 
+def RegResi(df, fama_df):
+    #pd.DataFrame.merge()
+    estu = fama_df.loc[df.index].copy()
+    estu = df.merge(estu, on=['date'])
+    estu = estu.rename(columns={'log-ret':'ret'})
+    form = 'ret ~ SMB + HML + MKT'
+    model = ols(form, data=estu)
+    results = model.fit()
+    return results.params.Intercept
+
 class Alpha191():
     def __init__(self, df):
         self.df = df
-        self.df['benchmark_close'] = ((self.df['total_mv'] / self.df['total_mv'].sum()) * self.df['close']).sum()
-        self.df['benchmark_open'] = self.df.shift(1).fillna(method='ffill')
+        self.benchmark_close = ((self.df['total_mv'] / self.df['total_mv'].sum()) * self.df['close']).sum()
+        self.benchmark_open = self.benchmark_close.shift(1).fillna(method='ffill')
+        self.benchmark_return = self.benchmark_close.pct_change().fillna(0.)
+        self.fama_df = Getfama3factors(self.df, self.benchmark_return)
 
     ## need nothing (good)
     def alpha001(self, df):
@@ -434,6 +465,25 @@ class Alpha191():
             tmp = cal_(tmp)
             df_all = df_all.append(tmp)
         self.df = df_all.drop(columns=['section1', 'section2'])
+        return self.df
+
+    # need percent (excellent)
+    def alpha030(self, df):
+        ## 三因子beta回归
+        ####WMA((REGRESI(CLOSE/DELAY(CLOSE)-1,MKT,SMB,HML， 60))^2,20)###
+        def cal_(df):
+            obj = df.rolling(window=60, method='table')
+            s = []
+            for o in obj:
+                s.append(RegResi(o, self.fama_df)**2)
+            return pd.DataFrame(s, index=df.index, columns=['beta'])
+
+        df_all = pd.DataFrame()
+        for ts_code in tqdm(df.ts_code.unique(), desc='alpha030 processing...'):
+            tmp = df.loc[df.ts_code == ts_code]
+            tmp['alpha_030'] = cal_(tmp)['beta']
+            df_all = df_all.append(tmp)
+        self.df = df_all
         return self.df
 
 if __name__ == '__main__':
