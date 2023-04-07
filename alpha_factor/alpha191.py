@@ -5,7 +5,19 @@ from statsmodels.formula.api import ols
 from tqdm import tqdm
 
 import warnings
+
 warnings.filterwarnings('ignore')
+
+
+def benchmark_close_day(df):
+    # calculate one day benchmark close values
+    df['weights'] = df['total_mv'] / df['total_mv'].sum()
+    return (df['weights'] * df['close']).sum()
+
+def benchmark_open_day(df):
+    # calculate one day benchmark close values
+    df['weights'] = df['total_mv'] / df['total_mv'].sum()
+    return (df['weights'] * df['open']).sum()
 
 def Getfama3factors(df, benchmark_return):
     def cal_(df):
@@ -25,6 +37,7 @@ def Getfama3factors(df, benchmark_return):
 
     return fama_df.fillna(0.)
 
+
 def Corr(data, win_len):
     obj = data.rolling(window=win_len, method='table')
     s = []
@@ -32,55 +45,65 @@ def Corr(data, win_len):
         if o.shape[0] < win_len:
             s.append(0.)
         else:
-            s.append(spearmanr(o.iloc[:,0], o.iloc[:,1])[0])
-            #s.append(o.iloc[:, 0].corr(o.iloc[:, 1]))
+            s.append(spearmanr(o.iloc[:, 0], o.iloc[:, 1])[0])
+            # s.append(o.iloc[:, 0].corr(o.iloc[:, 1]))
     return pd.DataFrame(s, index=data.index, columns=['corr'])
 
+
 def Decaylinear(sr, window):
-    weights = np.array(range(1, window+1))
+    weights = np.array(range(1, window + 1))
     sum_weights = np.sum(weights)
-    return sr.rolling(window).apply(lambda x: np.sum(weights*x) / sum_weights)
+    return sr.rolling(window).apply(lambda x: np.sum(weights * x) / sum_weights)
+
 
 ## calculate series rank in a rolling period time and get last time rank value
 def Tsrank(sr, window):
     return sr.rolling(window).apply(lambda x: rankdata(x)[-1])
 
+
 def Sma(sr, n, m):
     return sr.ewm(alpha=m / n, adjust=False).mean()
 
+
 def Sequence(n):
     return np.arange(1, n + 1)
+
 
 def Regbeta(sr, x):
     window = len(x)
     return sr.rolling(window).apply(lambda y: np.polyfit(x, y, deg=1)[0])
 
-def RegResi(df, fama_df):
-    #pd.DataFrame.merge()
+
+def RegResi(df, fama_df, form='ret ~ SMB + HML + MKT'):
+    # pd.DataFrame.merge()
     estu = fama_df.loc[df.index].copy()
     estu = df.merge(estu, on=['date'])
-    estu = estu.rename(columns={'log-ret':'ret'})
-    form = 'ret ~ SMB + HML + MKT'
+    estu = estu.rename(columns={'log-ret': 'ret'})
     model = ols(form, data=estu)
     results = model.fit()
     return results.params.Intercept
 
+
 class Alpha191():
     def __init__(self, df):
         self.df = df
-        self.benchmark_close = ((self.df['total_mv'] / self.df['total_mv'].sum()) * self.df['close']).sum()
-        self.benchmark_open = self.benchmark_close.shift(1).fillna(method='ffill')
+        self.benchmark_close = df.groupby('date').apply(benchmark_close_day)
+        self.benchmark_open = df.groupby('date').apply(benchmark_open_day)
         self.benchmark_return = self.benchmark_close.pct_change().fillna(0.)
         self.fama_df = Getfama3factors(self.df, self.benchmark_return)
 
     ## need nothing (good)
     def alpha001(self, df):
-        ## 成交量 与 涨幅关系 （提高换手率）
+        ## 成交量 与 涨幅关系
         ##### (-1 * CORR(RANK(DELTA(LOG(VOLUME), 1)), RANK(((CLOSE - OPEN) / OPEN)), 6))####
-        df['section1'] = np.log(df['volume'])
-        ##====improve====
-        # df['section1'] = df['volume']/df['total_share']
-        df['section1'] = df.groupby('ts_code')['section1'].diff(1)
+        def cal_(df):
+            df['section1'] = np.log(df['volume'])
+            ##====improve====
+            # df['section1'] = df['volume']/df['total_share']
+            df['section1'] = df['section1'].diff(1)
+            return df
+
+        df = df.groupby('ts_code').apply(cal_)
         df['section2'] = ((df.close - df.open) / df.open)
         df[['section1', 'section2']] = df.groupby('trade_date')[['section1', 'section2']].rank(method='min', pct=True)
         df_all = pd.DataFrame()
@@ -100,7 +123,7 @@ class Alpha191():
         self.df = df
         return self.df
 
-    ## need zscore and percent (good)
+    ## need zscore and percent
     def alpha003(self, df):
         ## 累计阶段涨跌趋势
         ##### SUM((CLOSE=DELAY(CLOSE,1)?0:CLOSE-(CLOSE>DELAY(CLOSE,1)?MIN(LOW,DELAY(CLOSE,1)):MAX(HIGH,DELAY(CLOSE,1)))),6) ####
@@ -116,6 +139,7 @@ class Alpha191():
             ## ===improve===
             df['alpha_003'] = df['alpha_003'] / df['close']
             return df
+
         self.df = df.groupby('ts_code').apply(cal_by_ticker)
         return self.df
 
@@ -139,10 +163,11 @@ class Alpha191():
             ## ===improve===
             df['alpha_004'] = df['alpha_004'] / df['close']
             return df
+
         self.df = df_all.groupby('ts_code').apply(cal_)
         return self.df
 
-    ## need nothing (test)
+    ## need nothing
     def alpha005(self, df):  # 1447
         ## 5日最大价量相关系数
         ####(-1 * TSMAX(CORR(TSRANK(VOLUME, 5), TSRANK(HIGH, 5), 5), 3))###
@@ -171,8 +196,8 @@ class Alpha191():
         self.df = df_all
         return self.df
 
-    ## need nothing (good)
-    def alpha007(self,df):
+    ## need nothing
+    def alpha007(self, df):
         ## 横截面价量操作方式（具备买卖方向）
         ####((RANK(MAX((VWAP - CLOSE), 3)) + RANK(MIN((VWAP - CLOSE), 3))) * RANK(DELTA(VOLUME, 3)))###
         def cal_(df):
@@ -203,7 +228,7 @@ class Alpha191():
         return self.df
 
     # need percent (test)
-    def alpha009(self,df):
+    def alpha009(self, df):
         ## 价量背离（钝化）
         ####SMA(((HIGH+LOW)/2-(DELAY(HIGH,1)+DELAY(LOW,1))/2)*(HIGH-LOW)/VOLUME,7,2)###
         def cal_(df):
@@ -214,7 +239,7 @@ class Alpha191():
         self.df = df.groupby('ts_code').apply(cal_)
         return self.df
 
-    # need percent (good)
+    # need percent
     def alpha010(self, df):
         ## 横截面相对价格突破
         ####(RANK(MAX(((RET < 0) ? STD(RET, 20) : CLOSE)^2),5))###
@@ -239,7 +264,7 @@ class Alpha191():
         self.df = df.groupby('ts_code').apply(cal_)
         return self.df
 
-    # need add offset (test)
+    # need add offset (good)
     def alpha012(self, df):
         # 大幅低开
         ####(RANK((OPEN - (SUM(VWAP, 10) / 10)))) * (-1 * (RANK(ABS((CLOSE - VWAP)))))###
@@ -250,7 +275,13 @@ class Alpha191():
 
         df = df.groupby('ts_code').apply(cal_)
         df[['section1', 'section2']] = df.groupby('trade_date')[['section1', 'section2']].rank(method='min', pct=True)
-        df['alpha_012'] = df['section1'] * (-df['section2'])
+        df['alpha_012'] = df['section1'] * (df['section2'])
+
+        def rescale_(df):
+            df['alpha_012'] = np.where(df['alpha_012'] > 0, df['alpha_012'] / df['alpha_012'].max(),
+                                       df['alpha_012'] / df['alpha_012'].min())
+            df['alpha_012'] = df['alpha_012'] * 2 - 1.
+        df = df.groupby('ts_code').apply(rescale_)
         self.df = df.drop(columns=['section1', 'section2'])
         return self.df
 
@@ -286,7 +317,7 @@ class Alpha191():
         self.df = df.groupby('ts_code').apply(cal_)
         return self.df
 
-    # need nothing (good)
+    # need nothing
     def alpha016(self, df):
         ## 5日横截面最大价量负相关
         ####(-1 * TSMAX(RANK(CORR(RANK(VOLUME), RANK(VWAP), 5)), 5))###
@@ -307,7 +338,7 @@ class Alpha191():
         self.df = df_all.drop(columns=['section1', 'section2'])
         return self.df
 
-    # need zscore and percent (test)
+    # need nothing (good)
     def alpha017(self, df):
         ## 15日以来的最新上涨动力
         ####RANK((VWAP - MAX(VWAP, 15)))^DELTA(CLOSE, 5)###
@@ -320,7 +351,7 @@ class Alpha191():
         def cal2_(df):
             # df['alpha_017'] = df['alpha_017'] ** df['close'].diff(5).fillna(0.)
             # ====improve====
-            df['alpha_017'] = df['alpha_017'] ** (df['close'].diff(5).fillna(0.) / df['close'])
+            df['alpha_017'] = df['alpha_017'] ** (df['close'].diff(5).fillna(0.) / df['close']) -1
             return df
 
         df = df.groupby('ts_code').apply(cal1_)
@@ -344,7 +375,7 @@ class Alpha191():
         self.df = df
         return self.df
 
-    # need percent (good)
+    # need percent
     def alpha019(self, df):
         # 5日涨跌动力 (归一化)
         ####(CLOSE<DELAY(CLOSE,5)?(CLOSE-DELAY(CLOSE,5))/DELAY(CLOSE,5):(CLOSE=DELAY(CLOSE,5)?0:(CLOSE-DELAY(CLOSE,5))/CLOSE))###
@@ -371,7 +402,7 @@ class Alpha191():
 
         return self.df
 
-    # need percent (good)
+    # need nothing (good)
     def alpha021(self, df):
         # 6日close均值~时间窗口回归
         ####REGBETA(MEAN(CLOSE,6),SEQUENCE(6))###
@@ -388,7 +419,7 @@ class Alpha191():
         self.df = df_all
         return self.df
 
-    # need percent (good)
+    # need percent (test)
     def alpha022(self, df):
         ## 6日收益均值趋势 12日sma平滑处理
         ####SMA(((CLOSE-MEAN(CLOSE,6))/MEAN(CLOSE,6)-DELAY((CLOSE-MEAN(CLOSE,6))/MEAN(CLOSE,6),3)),12,1)###
@@ -401,7 +432,7 @@ class Alpha191():
         self.df = df.groupby('ts_code').apply(cal_)
         return self.df
 
-    ## percent
+    ## percent(no)
     def alpha023(self, df):
         ## 20日上涨波动大小与收益正相关
         ####SMA((CLOSE>DELAY(CLOSE,1)?STD(CLOSE,20):0),20,1) / (SMA((CLOSE>DELAY(CLOSE,1)?STD(CLOSE,20):0),20,1) + SMA((CLOSE<=DELAY(CLOSE,1)?STD(CLOSE,20):0),20,1))*100###
@@ -416,7 +447,7 @@ class Alpha191():
             df['alpha_023'] = 100 * Sma(part1, 20, 1) / (Sma(part1, 20, 1) + Sma(part2, 20, 1))
             return df
 
-        self. df = df.groupby('ts_code').apply(cal_)
+        self.df = df.groupby('ts_code').apply(cal_)
         return self.df
 
     def alpha024(self, df):
@@ -428,7 +459,7 @@ class Alpha191():
         self.df = df.groupby('ts_code').apply(cal_)
         return self.df
 
-    # need percent (good)
+    # need percent (test)
     def alpha025(self, df):
         ## 量价背离 + 强者恒强
         ####((-1 * RANK((DELTA(CLOSE, 7) * (1 - RANK(DECAYLINEAR((VOLUME / MEAN(VOLUME,20)), 9)))))) * (1 + RANK(SUM(RET, 250))))###
@@ -448,7 +479,7 @@ class Alpha191():
         self.df = df.drop(columns=['section1', 'section2', 'section3'])
         return self.df
 
-    # need percent (good)
+    # need percent
     def alpha026(self, df):
         ## 长线超跌买入
         ####((((SUM(CLOSE, 7) / 7) - CLOSE)) + ((CORR(VWAP, DELAY(CLOSE, 5), 230))))###
@@ -466,15 +497,15 @@ class Alpha191():
             df_all = df_all.append(tmp)
         self.df = df_all.drop(columns=['section1', 'section2'])
         return self.df
-    
+
     ## need nothing (no)
     def alpha027(self, df):
         ## 平滑回报评估
         ####WMA((CLOSE-DELAY(CLOSE,3))/DELAY(CLOSE,3)*100+(CLOSE-DELAY(CLOSE,6))/DELAY(CLOSE,6)*100,12)###
         def cal_(df):
-            con1 = (df['close'] - df['close'].shift(3))/df['close'].shift(3) * 100
+            con1 = (df['close'] - df['close'].shift(3)) / df['close'].shift(3) * 100
             con2 = (df['close'] - df['close'].shift(6)) / df['close'].shift(6) * 100
-            df['alpha_027'] = (con1 + con2)/2
+            df['alpha_027'] = (con1 + con2) / 2
             return df
 
         self.df = df.groupby('ts_code').apply(cal_)
@@ -499,7 +530,7 @@ class Alpha191():
         ## 收益率换手率反比关系
         ####(CLOSE-DELAY(CLOSE,6))/DELAY(CLOSE,6)*VOLUME###
         def cal_(df):
-            df['alpha_029'] = (df['close'] - df['close'].shift(6))/(df['close'].shift(6) * df['volume'])
+            df['alpha_029'] = (df['close'] - df['close'].shift(6)) / (df['close'].shift(6) * df['volume'])
             return df
 
         self.df = df.groupby('ts_code').apply(cal_)
@@ -507,13 +538,13 @@ class Alpha191():
 
     # need percent (excellent)
     def alpha030(self, df):
-        ## 三因子beta回归
+        ## 三因子beta回归 >0.5 超跌买入
         ####WMA((REGRESI(CLOSE/DELAY(CLOSE)-1,MKT,SMB,HML， 60))^2,20)###
         def cal_(df):
             obj = df.rolling(window=60, method='table')
             s = []
             for o in obj:
-                s.append(RegResi(o, self.fama_df)**2)
+                s.append(RegResi(o, self.fama_df) ** 2)
             return pd.DataFrame(s, index=df.index, columns=['beta'])
 
         df_all = pd.DataFrame()
@@ -524,12 +555,13 @@ class Alpha191():
         self.df = df_all
         return self.df
 
+
 if __name__ == '__main__':
-    #df = pd.read_csv('tushare_data/raw_20180103_20230327.csv').iloc[:, 1:]
+    # df = pd.read_csv('tushare_data/raw_20180103_20230327.csv').iloc[:, 1:]
     df = pd.read_csv('tmp.csv').iloc[:, 1:]
     df['date'] = pd.to_datetime(df['trade_date'], format='%Y%m%d')
     df = df.set_index(['date']).sort_values(by=['date'])
-    df['volume'] = df['amount']/df['close']
+    df['volume'] = df['amount'] / df['close']
     df['log-ret'] = df.groupby('ts_code')['close'].pct_change()
     df['vwap'] = (df['low'] + df['high']) / 2
     # PICK TOP 5 TICKERS
