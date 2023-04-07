@@ -466,6 +466,44 @@ class Alpha191():
             df_all = df_all.append(tmp)
         self.df = df_all.drop(columns=['section1', 'section2'])
         return self.df
+    
+    ## need nothing (no)
+    def alpha027(self, df):
+        ## 平滑回报评估
+        ####WMA((CLOSE-DELAY(CLOSE,3))/DELAY(CLOSE,3)*100+(CLOSE-DELAY(CLOSE,6))/DELAY(CLOSE,6)*100,12)###
+        def cal_(df):
+            con1 = (df['close'] - df['close'].shift(3))/df['close'].shift(3) * 100
+            con2 = (df['close'] - df['close'].shift(6)) / df['close'].shift(6) * 100
+            df['alpha_027'] = (con1 + con2)/2
+            return df
+
+        self.df = df.groupby('ts_code').apply(cal_)
+        return self.df
+
+    ## need percent (no)
+    def alpha028(df):
+        ## 3日夏普比率涨跌趋势
+        ####3*SMA((CLOSE-TSMIN(LOW,9))/(TSMAX(HIGH,9)-TSMIN(LOW,9))*100,3,1)-2*SMA(SMA((CLOSE-TSMIN(LOW,9))/(MAX(HIGH,9)-TSMAX(LOW,9))*100,3,1),3,1)###
+        def cal_(df):
+            con1 = 3 * Sma((df['close'] - df['low'].rolling(9).min()) / (df['high'].rolling(9).max()
+                                                                         - df['low'].rolling(9).min()), 3, 1)
+            con2 = 2 * Sma(con1, 3, 1)
+            df['alpha_028'] = con1 - con2
+            return df
+
+        df = df.groupby('ts_code').apply(cal_)
+        return df
+
+    ## need nothing (test)
+    def alpha029(self, df):
+        ## 收益率换手率反比关系
+        ####(CLOSE-DELAY(CLOSE,6))/DELAY(CLOSE,6)*VOLUME###
+        def cal_(df):
+            df['alpha_029'] = (df['close'] - df['close'].shift(6))/(df['close'].shift(6) * df['volume'])
+            return df
+
+        self.df = df.groupby('ts_code').apply(cal_)
+        return self.df
 
     # need percent (excellent)
     def alpha030(self, df):
