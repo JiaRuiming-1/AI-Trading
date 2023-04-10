@@ -83,6 +83,10 @@ def RegResi(df, fama_df, form='ret ~ SMB + HML + MKT'):
     results = model.fit()
     return results.params.Intercept
 
+def rescale_zscore(data):
+    for col in data.columns:
+        data[col] =(data[col] - data[col].mean())/data[col].std()
+    return data
 
 class Alpha191():
     def __init__(self, df, benchmark_df):
@@ -978,6 +982,57 @@ class Alpha191():
         df = df.groupby('ts_code').apply(cal_)
         df['alpha_110'] = df.groupby('trade_date')['alpha_110'].rank(method='min', pct=True)
         self.df = df.drop(columns=['section1', 'section2']).sort_values(by=['date'])
+        return self.df
+    
+    def alpha111(self, df):  # 1789
+        ## 动量回归
+        ####SMA(VOL*((CLOSE-LOW)-(HIGH-CLOSE))/(HIGH-LOW),11,2)-SMA(VOL*((CLOSE-LOW)-(HIGH-CLOSE))/(HIGH-LOW),4,2)###
+        def cal_(df):
+            df['alpha_111'] = Sma(
+                df['volume'] * (df['close'] - df['low'] - df['high'] + df['close']) / (df['high'] - df['low']), 11, 2) \
+                              - Sma(
+                df['volume'] * (df['close'] - df['low'] - df['high'] + df['close']) / (df['high'] - df['low']), 4, 2)
+            return df
+
+        self.df = df.groupby('ts_code').apply(cal_)
+        self.df[['alpha_111']] = self.df.groupby('trade_date')[['alpha_111']].apply(zscore)
+        return self.df
+
+    def alpha112(self, df):
+        ##
+        ####(SUM((CLOSE-DELAY(CLOSE,1)>0? CLOSE-DELAY(CLOSE,1):0),12) - SUM((CLOSE-DELAY(CLOSE,1)<0?ABS(CLOSE-DELAY(CLOSE,1)):0),12))/(SUM((CLOSE-DELAY(CLOSE,1)>0?CLOSE-DELAY(CLOSE,1):0),12) + SUM((CLOSE-DELAY(CLOSE,1)<0?ABS(CLOSE-DELAY(CLOSE,1)):0),12))*100
+        def cal_(df):
+            section1 = pd.Series(np.where(df['close'].diff(1) > 0, df['close'].diff(1), 0), index=df.index)
+            section2 = pd.Series(np.where(df['close'].diff(1) <= 0, abs(df['close'].diff(1)), 0), index=df.index)
+            # print(section2)
+            df['alpha_112'] = (section1.rolling(12).sum() - section2.rolling(12).sum()) / (
+                        section1.rolling(12).sum() + section2.rolling(12).sum())
+            return df
+
+        df = df.groupby('ts_code').apply(cal_)
+
+        df[['alpha_112']] = df.groupby('trade_date')[['alpha_112']].apply(rescale_zscore)
+        self.df = df
+        return self.df
+
+    def alpha113(self, df):
+        ####(-1 * ((RANK((SUM(DELAY(CLOSE, 5), 20) / 20)) * CORR(CLOSE, VOLUME, 2)) * RANK(CORR(SUM(CLOSE, 5),SUM(CLOSE, 20), 2))))###
+        def cal_(df):
+            df['section1'] = df['log-ret'].cumsum().shift(5).rolling(20).mean()
+            df['section2'] = Corr(df[['volume', 'close']], 2)
+            df['section1'] = df['section1'] * df['section2']
+            df['section2'] = Corr(pd.concat([df['close'].rolling(5).sum(), df['close'].rolling(20).sum()], axis=1), 2)
+            return df
+
+        df = df.groupby('ts_code').apply(cal_)
+        df_all = pd.DataFrame()
+        for ts_code in tqdm(df.ts_code.unique()):
+            tmp = df.loc[df.ts_code == ts_code]
+            tmp = cal_(tmp)
+            df_all = df_all.append(tmp)
+        df_all[['section1', 'section2']] = df_all.groupby('trade_date')[['section1', 'section2']].apply(rescale_zscore)
+        df_all['alpha_113'] = -df_all['section1'] * df_all['section2']
+        self.df = df_all.drop(columns=['section1', 'section2'])
         return self.df
 
     ## need nothing (excellent)
