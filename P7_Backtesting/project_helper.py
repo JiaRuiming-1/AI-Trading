@@ -8,6 +8,48 @@ from scipy.stats import spearmanr
 from IPython.display import Image
 from sklearn.tree import export_graphviz
 
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import VotingClassifier
+from sklearn.base import clone
+from sklearn.preprocessing import LabelEncoder
+from sklearn.utils import Bunch
+
+
+class NoOverlapVoter(VotingClassifier):
+    def _calculate_oob_score(self, classifiers):
+        oob = 0
+        for clf in classifiers:
+            oob = oob + clf.oob_score_
+        return oob / len(classifiers)
+
+    def _non_overlapping_estimators(self, x, y, classifiers, n_skip_samples):
+        estimators_ = []
+        for i in range(n_skip_samples):
+            estimators_.append(
+                classifiers[i].fit(x[i::n_skip_samples], y[i::n_skip_samples])
+            )
+        return estimators_
+
+    def __init__(self, estimator, voting='soft', n_skip_samples=4):
+        # List of estimators for all the subsets of data
+        estimators = [('clf' + str(i), estimator) for i in range(n_skip_samples + 1)]
+
+        self.n_skip_samples = n_skip_samples
+        super().__init__(estimators, voting=voting)
+
+    def fit(self, X, y, sample_weight=None):
+        estimator_names, clfs = zip(*self.estimators)
+        self.le_ = LabelEncoder().fit(y)
+        self.classes_ = self.le_.classes_
+
+        clone_clfs = [clone(clf) for clf in clfs]
+        self.estimators_ = self._non_overlapping_estimators(X, y, clone_clfs, self.n_skip_samples)
+        self.named_estimators_ = Bunch(**dict(zip(estimator_names, self.estimators_)))
+        self.oob_score_ = self._calculate_oob_score(self.estimators_)
+
+        return self
+
+
 def train_valid_test_split(all_x, all_y, train_size, valid_size, test_size):
     """
     Generate the train, validation, and test dataset.
@@ -111,7 +153,7 @@ def get_factor_returns(factor_data):
 
 def plot_factor_returns(factor_returns):
     #(1 + factor_returns).cumprod().plot(ylim=(0.8, 1.2))
-    (1 + factor_returns).cumprod().plot()
+    (1 + factor_returns).cumprod().plot(grid=True)
 
 
 def plot_factor_rank_autocorrelation(factor_data):
@@ -127,34 +169,9 @@ def plot_factor_rank_autocorrelation(factor_data):
         ls_FRA[factor] = al.performance.factor_rank_autocorrelation(factor_data)
 
     #ls_FRA.plot(title="Factor Rank Autocorrelation", ylim=(0.8, 1.0))
-    ls_FRA.plot(title="Factor Rank Autocorrelation")
+    ls_FRA.plot(title="Factor Rank Autocorrelation", grid=True)
 
 
-def build_factor_data(factor_data, pricing, holding_time=5):
+def build_factor_data(factor_data, pricing, holding_time=20):
     return {factor_name: al.utils.get_clean_factor_and_forward_returns(factor=data, prices=pricing, periods=[holding_time], max_loss=1.)
         for factor_name, data in factor_data.iteritems()}
-
-
-# add KAMA alpha factor
-def KAMA_filter(df):    
-    unique_stocks = df.ts_code.unique()
-    all_df = pd.DataFrame()
-    for ts_code in tqdm(unique_stocks, desc='kama filter'):
-        tmp = df.loc[df.ts_code == ts_code]
-        tmp['kama_filter'] = tmp['close_10_kama_5_30'].rolling(window=20).std().fillna(method='bfill') 
-        tmp['kama_prior_1'] = tmp['close_10_kama_5_30'].shift(1).fillna(method='bfill')
-        tmp['kama_prior_2'] = tmp['close_10_kama_5_30'].shift(2).fillna(method='bfill')
-        #tmp['kama_prior_2'] = tmp['close_10_kama_5_30']
-        tmp['alpha_kama'] = (tmp['close_10_kama_5_30'] - tmp['kama_prior_1']) \
-                            + (tmp['kama_prior_1'] - tmp['kama_prior_2']) - tmp['kama_filter']
-        tmp['alpha_kama'] = tmp['alpha_kama']/ tmp['close_10_kama_5_30']
-        all_df = all_df.append(tmp[['ts_code','trade_date','alpha_kama']], ignore_index=True)
-    df = df.merge(all_df, on=['ts_code','trade_date'], how='left')
-    df['date'] = pd.to_datetime(df['trade_date'],format='%Y%m%d')
-    df = df.set_index(['date']).sort_values(by=['date'])
-    return df
-
-#temp = universe.loc[universe.ts_code=='603538.SH']
-#temp = KAMA_filter(temp)
-#universe = universe.drop(columns=['alpha_kama'])
-universe = KAMA_filter(universe)
