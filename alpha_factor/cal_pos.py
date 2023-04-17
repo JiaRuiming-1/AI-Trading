@@ -1,3 +1,7 @@
+'''
+['ts_code', 'trade_date', 'name', 'industry', 'close', 'log-ret',
+       'alpha_atr', 'alpha_010', 'alpha_149', 'alpha_AI']
+'''
 def factor_positive_profit(universe):
     df = universe.copy(deep=True)
     features = [
@@ -5,9 +9,9 @@ def factor_positive_profit(universe):
     ]
     def process_(data):
         ## shift log-ret   
-        data['p_ret4'] = data['log-ret'].shift(-2).fillna(0)
-        data['p_ret5'] = data['log-ret'].shift(-3).fillna(0)
-        data['p_ret6'] = data['log-ret'].shift(-4).fillna(0)
+        data['p_ret4'] = data['log-ret'].shift(-7).fillna(0)
+        data['p_ret5'] = data['log-ret'].shift(-8).fillna(0)
+        data['p_ret6'] = data['log-ret'].shift(-9).fillna(0)
         ## only save factor positive values
         for feature in features:
             data[feature] = np.where(data[feature]>0, data[feature], 0)
@@ -24,7 +28,7 @@ def factor_positive_profit(universe):
     for dt in tqdm(p_ret_df.index, desc='cross sum feature returns'):
         tmp = df.loc[df.index==dt]
         for feature in features:
-            p_ret_df.at[dt, feature] = tmp[feature + '_returns'].sum()
+            p_ret_df.at[dt, feature] = tmp[feature + '_returns'].sum()/tmp[feature].sum()
         
     ## calculate positive factor cumsum returns
     p_ret_df.fillna(0)
@@ -33,5 +37,8 @@ def factor_positive_profit(universe):
             
     return p_ret_df
 
-tmp_cal = universe.loc[universe['trade_date'] > 20220101]
+tmp_cal = universe.loc[universe['trade_date'] > 20220501]
 positive_returns_df = factor_positive_profit(tmp_cal)
+
+return_features = ['alpha_atr', 'alpha_010', 'alpha_149', 'alpha_AI']
+positive_returns_df[return_features].plot(grid=True)
