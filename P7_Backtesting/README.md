@@ -21,4 +21,4 @@ make some alpha factors based on papers and Alpha191 and evaluate them.
 `Backtest_Real.ipynb` this notebook is backtesting by real-world data
 1. Optimal portfolio bettwen ML combined factor and PCA risk model by convex method.
 2. Analysis risk expousure ,alpha expousure and costs
-3. Analysis Pnl(profit and loss) and factor attributes.
+3. Analysis Pnl(profit and loss)
