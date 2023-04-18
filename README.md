@@ -9,6 +9,7 @@ This repository is some artifical intelligence or other mathmatic method and mes
     ├── P5_NLP  (1 tf-idf and similarity to estimate corresponding of finace report. 2.embedding and LSTM to learn message sentiments)
     ├── P6_Feature_Engineering  (use Randomforest and explain features importance )
     ├── P7_Backtesting  (use fmin_l_bfgs_b balance risk and alpha factor of portfolio to backtest)
+    ├── alpha_factor (Some alpha factors of Alpha191)
     ├── requierments.txt  (Common packages used for projects and quizzes)
 ## Environment
 Anconda 4.10.3
