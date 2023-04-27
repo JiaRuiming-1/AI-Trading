@@ -13,17 +13,20 @@ import cvxpy as cvx
 
 class OptimalHoldings():
     
-    def __init__(self, risk_cap=0.1, factor_max=10.0, factor_min=-10.0, weights_max=0.3, weights_min=0):
+    def __init__(self, risk_cap=.2, factor_max=50.0, factor_min=-50.0, weights_max=0.25, weights_min=0, lambda_reg=.3):
+        self.lambda_reg = lambda_reg
         self.risk_cap = risk_cap
         self.factor_max = factor_max
         self.factor_min = factor_min
         self.weights_max = weights_max
         self.weights_min = weights_min
         
-    def _get_obj(self, weights, alpha_vector):
+    def _get_obj(self, weights, alpha_vector, pre_weights):
         assert (len(alpha_vector.columns) == 1)
-
-        return cvx.Minimize(-alpha_vector.values.flatten() * weights)
+        Lambda = 1e-6
+        cost_obj = sum(np.dot((weights-pre_weights)**2, Lambda))
+        #return cvx.Minimize(-alpha_vector.values.flatten() * weights)
+        return cvx.Minimize(alpha_vector.values.T * weights + self.lambda_reg * cvx.norm(weights)+ cost_obj)
 
     def _get_constraints(self, weights, factor_betas, risk):
         assert (len(factor_betas.shape) == 2)
@@ -43,27 +46,27 @@ class OptimalHoldings():
         S = np.diag(idiosyncratic_var_vector.loc[alpha_vector_index].values.flatten())
         return cvx.quad_form(f, X) + cvx.quad_form(weights, S)
 
-    def find(self, alpha_vector, factor_betas, factor_cov_matrix, idiosyncratic_var_vector):
+    def find(self, alpha_vector, factor_betas, factor_cov_matrix, idiosyncratic_var_vector, pre_weights):
         weights = cvx.Variable(len(alpha_vector))
 
         risk = self._get_risk(weights, factor_betas, alpha_vector.index, factor_cov_matrix, idiosyncratic_var_vector)
 
-        obj = self._get_obj(weights, alpha_vector)
+        obj = self._get_obj(weights, alpha_vector, pre_weights)
         constraints = self._get_constraints(weights, factor_betas.loc[alpha_vector.index].values, risk)
 
         prob = cvx.Problem(obj, constraints)
-        #prob.solve(max_iters=100)
-        prob.solve()
+        prob.solve(max_iters=50)
+        #prob.solve()
 
         optimal_weights = np.asarray(weights.value).flatten()
         return pd.DataFrame(data=optimal_weights, index=alpha_vector.index)
     
-
+alpha_df['h_privious'] = 0.
 dt = 20230426
 obj_df = alpha_df.loc[alpha_df.trade_date==dt]
 alpha_vector = obj_df.loc[obj_df.index.get_level_values(0)[-1]][['alpha_all']]
 optimal_weights = OptimalHoldings().find(alpha_vector, variance_all[dt][1],
-                                        variance_all[dt][4],  variance_all[dt][3])
+                                        variance_all[dt][4],  variance_all[dt][3], obj_df['h_privious'])
 optimal_weights.loc[optimal_weights[0]>=0.01]
 
 ## use
@@ -81,7 +84,7 @@ for dt in tqdm(calendar, desc='optimized holding...'):
     alpha_vector = obj_df.loc[obj_df.index.get_level_values(0)[-1]][['alpha_all']]
     # convex optimize
     optimal_weights = OptimalHoldings().find(alpha_vector, variance_all[dt][1],
-                                        variance_all[dt][4],  variance_all[dt][3])
+                                        variance_all[dt][4],  variance_all[dt][3], obj_df['h_privious'])
     h_optimal = optimal_weights
     # update optimize holding
     obj_df['h_opt'] = h_optimal.values
