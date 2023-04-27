@@ -1,3 +1,14 @@
+# only for positive estimate
+for feature in alpha_field:
+    alpha_df[feature] = np.where(alpha_df[feature]>=0.85, alpha_df[feature], np.where(alpha_df[feature]<=-0.85, alpha_df[feature], 0))
+    alpha_df[feature] = np.where(alpha_df[feature]>=0, alpha_df[feature], 0)
+
+# only for positive estimate
+for feature in alpha_field:
+    all_factors[feature] = np.where(all_factors[feature]>=0.85, all_factors[feature],
+                                    np.where(all_factors[feature]<=-0.85, all_factors[feature], 0))
+
+
 import cvxpy as cvx
 
 class OptimalHoldings():
