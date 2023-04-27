@@ -26,7 +26,7 @@ class OptimalHoldings():
         Lambda = 1e-6
         cost_obj = sum(np.dot((weights-pre_weights)**2, Lambda))
         #return cvx.Minimize(-alpha_vector.values.flatten() * weights)
-        return cvx.Minimize(alpha_vector.values.T * weights + self.lambda_reg * cvx.norm(weights)+ cost_obj)
+        return cvx.Minimize(-alpha_vector.values.T * weights + self.lambda_reg * cvx.norm(weights)+ cost_obj)
 
     def _get_constraints(self, weights, factor_betas, risk):
         assert (len(factor_betas.shape) == 2)
