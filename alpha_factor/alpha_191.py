@@ -34,7 +34,7 @@ def Getfama3factors(df, benchmark_return):
         SMB, HML = cal_(tmp)
         fama_df.at[dt, 'SMB'] = SMB
         fama_df.at[dt, 'HML'] = HML
-        # fama_df.at[dt, 'MKT'] = tmp['log-ret'].mean() - benchmark_return[dt]
+        #fama_df.at[dt, 'MKT'] = tmp['log-ret'].mean() - benchmark_return[dt]
         fama_df.at[dt, 'MKT'] = tmp['log-ret'].mean() - 0.00015
 
     return fama_df.fillna(0.)
@@ -104,7 +104,7 @@ class Alpha191():
     def __init__(self, df, benchmark_df=None):
         df = df.reset_index(drop=True)
         df['date'] = pd.to_datetime(df['trade_date'], format='%Y%m%d')
-        df = df.set_index(['date']).sort_values(by=['date'])
+        df = df.set_index(['date']).sort_index(level=['date'])
 
         self.benchmark_close = df.groupby('date').apply(benchmark_close_day)
         self.benchmark_open = df.groupby('date').apply(benchmark_open_day)
@@ -150,7 +150,7 @@ class Alpha191():
         ##### -1 * delta((((close-low)-(high-close))/(high-low)),1))####
         df['alpha_002'] = -(((df.close - df.low) - (df.high - df.close)) / (df.high - df.low)).diff(1)
         ##===improve====
-        df['alpha_002'] = df.groupby('trade_date')['alpha_002'].rank(method='min', pct=True)
+        #df['alpha_002'] = df.groupby('trade_date')['alpha_002'].rank(method='min', pct=True)
         self.df = df
         return self.df
 
@@ -159,16 +159,15 @@ class Alpha191():
         ## 累计阶段涨跌趋势
         ##### SUM((CLOSE=DELAY(CLOSE,1)?0:CLOSE-(CLOSE>DELAY(CLOSE,1)?MIN(LOW,DELAY(CLOSE,1)):MAX(HIGH,DELAY(CLOSE,1)))),6) ####
         def cal_by_ticker(df):
-            cond1 = (df.close == df.close.shift(1).fillna(method='ffill'))
-            cond2 = (df.close > df.close.shift(1).fillna(method='ffill'))
-            cond3 = (df.close < df.close.shift(1).fillna(method='ffill'))
+            cond1 = (df.close == df.close.shift(1))
+            cond2 = (df.close > df.close.shift(1))
+            cond3 = (df.close < df.close.shift(1))
             part = df.close.copy(deep=True)
             part[cond1] = 0
             part[cond2] = df.close - np.minimum(df.low, df.close.shift(1).fillna(method='ffill'))
             part[cond3] = df.close - np.maximum(df.high, df.close.shift(1).fillna(method='ffill'))
             df['alpha_003'] = part.rolling(window=6).sum()
-            ## ===improve===
-            df['alpha_003'] = df['alpha_003'] / df['close']
+
             return df
 
         self.df = df.groupby('ts_code').apply(cal_by_ticker)
@@ -191,8 +190,7 @@ class Alpha191():
             part[cond3] = -1
             part[cond3 & cond4] = 1
             df['alpha_004'] = part
-            ## ===improve===
-            df['alpha_004'] = df['alpha_004'] / df['close']
+
             return df
 
         self.df = df_all.groupby('ts_code').apply(cal_)
@@ -207,8 +205,8 @@ class Alpha191():
             tmp = df.loc[df.ts_code == ts_code]
             tmp['Tsrank_v'] = Tsrank(tmp.volume, 5)
             tmp['Tsrank_h'] = Tsrank(tmp.high, 5)
-            tmp['alpha_005'] = Corr(tmp[['Tsrank_v', 'Tsrank_h']], 5)['corr']
-            tmp['alpha_005'] = -tmp['alpha_005'].rolling(window=3).max()
+            tmp['alpha_005'] = Corr(tmp[['Tsrank_v', 'Tsrank_h']], 14)['corr']
+            tmp['alpha_005'] = -tmp['alpha_005'].rolling(window=5).max()
             df_all = df_all.append(tmp)
         df_all['alpha_005'].fillna(0., inplace=True)
         self.df = df_all.drop(columns=['Tsrank_v', 'Tsrank_h']).sort_values(by=['date'])
@@ -235,7 +233,7 @@ class Alpha191():
             rolling_obj = (df['vwap'] - df['close']).rolling(3)
             df['section1'] = rolling_obj.max()
             df['section2'] = rolling_obj.min()
-            df['section3'] = df['volume'].diff(3)
+            df['section3'] = -df['volume'].diff(3)
             return df
 
         df_all = df.groupby('ts_code').apply(cal_)
@@ -263,7 +261,7 @@ class Alpha191():
         ## 价量背离（钝化）
         ####SMA(((HIGH+LOW)/2-(DELAY(HIGH,1)+DELAY(LOW,1))/2)*(HIGH-LOW)/VOLUME,7,2)###
         def cal_(df):
-            term = ((df.high + df.low) / 2 - (df.high.diff(1) + df.low.diff(1)) / 2) * (df.high - df.low) / df.volume
+            term = ((df.high + df.low) / 2 - (df.high.diff(1) + df.low.diff(1)) / 2) * (df.high - df.low) / np.log(df.volume)
             df['alpha_009'] = Sma(term, 7, 2)
             return df
 
@@ -307,7 +305,7 @@ class Alpha191():
 
         df = df.groupby('ts_code').apply(cal_)
         df[['section1', 'section2']] = df.groupby('trade_date')[['section1', 'section2']].rank(method='min', pct=True)
-        df['alpha_012'] = df['section1'] * (df['section2'])
+        df['alpha_012'] = df['section1'] * (-df['section2'])
 
         self.df = df.drop(columns=['section1', 'section2'])
         return self.df
@@ -348,7 +346,7 @@ class Alpha191():
     def alpha016(self, df):
         ## 5日横截面最大价量负相关
         ####(-1 * TSMAX(RANK(CORR(RANK(VOLUME), RANK(VWAP), 5)), 5))###
-        df[['section1', 'section2']] = df.groupby('trade_date')[['volume', 'vwap']].apply(zscore)
+        df[['section1', 'section2']] = df.groupby('trade_date')[['volume', 'vwap']].rank(method='min', pct=True)
         df_all = pd.DataFrame()
         for ts_code in tqdm(df.ts_code.unique(), desc='alpha016 processing...'):
             tmp = df.loc[df.ts_code == ts_code]
@@ -360,9 +358,8 @@ class Alpha191():
             df['alpha_016'] = -df['alpha_016']
             return df
 
-        df_all['alpha_016'] = df_all.groupby('trade_date')['alpha_016'].rank(method='min', pct=True)
         df_all = df_all.groupby('ts_code').apply(cal_)
-        self.df = df_all.drop(columns=['section1', 'section2']).sort_values(by=['date'])
+        self.df = df_all.drop(columns=['section1', 'section2']).sort_index(level=['date'])
         return self.df
 
     # need nothing (good)
@@ -374,7 +371,7 @@ class Alpha191():
             return df
 
         def cal2_(df):
-            df['alpha_017'] = -df['alpha_017'] ** (df['close'].diff(5))
+            df['alpha_017'] = df['alpha_017'] ** (df['close'].diff(5))
             return df
 
         df = df.groupby('ts_code').apply(cal1_)
@@ -403,7 +400,7 @@ class Alpha191():
         # 5日涨跌动力 (归一化)
         ####(CLOSE<DELAY(CLOSE,5)?(CLOSE-DELAY(CLOSE,5))/DELAY(CLOSE,5):(CLOSE=DELAY(CLOSE,5)?0:(CLOSE-DELAY(CLOSE,5))/CLOSE))###
         def cal_(df):
-            df['alpha_019'] = np.where(df['close'] < df['close'].shift(5),
+            df['alpha_019'] = -np.where(df['close'] < df['close'].shift(5),
                                        (df['close'] - df['close'].shift(5)) / df['close'].shift(5),
                                        np.where(df['close'] > df['close'].shift(5),
                                                 (df['close'] - df['close'].shift(5)) / df['close'], 0.))
@@ -419,6 +416,7 @@ class Alpha191():
         ####CLOSE/DELAY(CLOSE,5)###
         def cal_(df):
             df['alpha_020'] = (df['close'] - df['close'].shift(6)) / df['close'].shift(6)
+            df['alpha_020'] = 1/df['alpha_020']
             return df
 
         self.df = df.groupby('ts_code').apply(cal_)
@@ -430,8 +428,8 @@ class Alpha191():
         # 14日close均值~时间窗口回归
         ####REGBETA(MEAN(CLOSE,6),SEQUENCE(6))###
         def cal_(df):
-            df['alpha_021'] = Regbeta(df['close'].rolling(14).mean(), Sequence(14))
-            df['alpha_021'] = - df['alpha_021']
+            df['alpha_021'] = Regbeta(df['close'].rolling(6).mean(), Sequence(6))
+            #df['alpha_021'] = 1/df['alpha_021']
             return df
 
         df_all = pd.DataFrame()
@@ -440,7 +438,7 @@ class Alpha191():
             tmp = cal_(tmp)
             df_all = df_all.append(tmp)
 
-        self.df = df_all.sort_values(by=['date'])
+        self.df = df_all.sort_index(level=['date'])
         return self.df
 
     # need percent (test)
@@ -478,7 +476,7 @@ class Alpha191():
     def alpha024(self, df):
         ####SMA(CLOSE-DELAY(CLOSE,5),5,1)###
         def cal_(df):
-            df['alpha_024'] = Sma((df['close'] - df['close'].shift(5)) / df['close'], 5, 1)
+            df['alpha_024'] = -Sma((df['close'] - df['close'].shift(5)) / df['close'], 5, 1)
             return df
 
         self.df = df.groupby('ts_code').apply(cal_)
@@ -498,8 +496,6 @@ class Alpha191():
         df[['section2', 'section3']] = df.groupby('trade_date')[['section2', 'section3']].rank(method='min', pct=True)
         df['section1'] = df['section1'] * (1 - df['section2'])
         df[['section1']] = df.groupby('trade_date')[['section1']].rank(method='min', pct=True)
-        # ===improve===
-        #  df['alpha_025'] = (-df['section1']) * (1 + df['section3'])
         df['alpha_025'] = ((-df['section1']) * (1 + df['section3']))  # .fillna(-1.) + .8
         self.df = df.drop(columns=['section1', 'section2', 'section3'])
         return self.df
@@ -511,8 +507,8 @@ class Alpha191():
         def cal_(df):
             df['section1'] = (df['close'].rolling(7).mean() - df['close'])
             df['section2'] = df['close'].shift(5)
-            df['section2'] = Corr(df[['vwap', 'section2']], 120)
-            df['alpha_026'] = df['section1'] + df['section2']
+            df['section2'] = Corr(df[['vwap', 'section2']], 60)
+            df['alpha_026'] = df['section1'] * df['section2']
             return df
 
         df_all = pd.DataFrame()
@@ -520,7 +516,7 @@ class Alpha191():
             tmp = df.loc[df.ts_code == ts_code]
             tmp = cal_(tmp)
             df_all = df_all.append(tmp)
-        self.df = df_all.drop(columns=['section1', 'section2']).sort_values(by=['date'])
+        self.df = df_all.drop(columns=['section1', 'section2']).sort_index(level=['date'])
         return self.df
 
     ## need nothing (no)
@@ -555,7 +551,7 @@ class Alpha191():
         ## 收益率换手率反比关系
         ####(CLOSE-DELAY(CLOSE,6))/DELAY(CLOSE,6)*VOLUME###
         def cal_(df):
-            df['alpha_029'] = (df['close'] - df['close'].shift(6)) / (df['close'].shift(6) * df['volume'])
+            df['alpha_029'] = (df['close'] - df['close'].shift(6)) / (df['close'].shift(6) * df['volume'].rolling(6).mean())
             return df
 
         self.df = df.groupby('ts_code').apply(cal_)
@@ -566,10 +562,10 @@ class Alpha191():
         ## 三因子回归偏离度
         ####WMA((REGRESI(CLOSE/DELAY(CLOSE)-1,MKT,SMB,HML， 60))^2,20)###
         def cal_(df):
-            obj = df.rolling(window=60, method='table')
+            obj = df.rolling(window=20, method='table')
             s = []
             for o in obj:
-                s.append(RegResi(o, self.fama_df) ** 2)
+                s.append(RegResi(o, self.fama_df))
             sdf = pd.DataFrame(s, index=df.index, columns=['beta'])
             #sdf['beta'] = sdf['beta'] / sdf['beta'].rolling(60).max()
             return sdf
@@ -609,7 +605,7 @@ class Alpha191():
         def cal_(df):
             section1 = df['low'].rolling(6).min()
             df['section1'] = ((-section1) + section1.shift(6))
-            df['section2'] = (df['log-ret'].rolling(90).sum() - df['log-ret'].rolling(20).sum()) / 120
+            df['section2'] = (df['log-ret'].rolling(240).sum() - df['log-ret'].rolling(20).sum()) / 220
             df['section3'] = Tsrank(df['volume'], 6)
             return df
 
@@ -625,9 +621,9 @@ class Alpha191():
         ## 寻找开盘价长期高点或量价背离最大化取保守值
         ####(MIN(RANK(DECAYLINEAR(DELTA(OPEN, 1), 15)), RANK(DECAYLINEAR(CORR((VOLUME), ((OPEN * 0.65) +(OPEN *0.35)), 17),7))) * -1)###
         def cal_(df):
-            df['section1'] = Decaylinear(df['open'].diff(1), 15)
+            df['section1'] = -Decaylinear(df['open'].diff(1), 15)
             df['section2'] = df['open'] * 0.65 + df['high'] * 0.35
-            df['section2'] = Decaylinear(Corr(df[['volume', 'section2']], 17)['corr'], 7)
+            df['section2'] = -Decaylinear(Corr(df[['volume', 'section2']], 17)['corr'], 7)
             return df
 
         df_all = pd.DataFrame()
@@ -637,7 +633,7 @@ class Alpha191():
             df_all = df_all.append(tmp)
 
         df_all[['section1', 'section2']] = df_all.groupby('trade_date')[['section1', 'section2']].rank(pct=True)
-        df_all['alpha_035'] = -np.where(df_all['section1'] < df_all['section2'], df_all['section1'], df_all['section2'])
+        df_all['alpha_035'] = np.where(df_all['section1'] < df_all['section2'], df_all['section1'], df_all['section2'])
         self.df = df_all.drop(columns=['section1', 'section2']).sort_values(by=['date'])
         return self.df
 
@@ -731,7 +727,7 @@ class Alpha191():
         ## 寻找12日均价价最小且80日均量价背离越明显的位置
         ####(MAX(RANK(DECAYLINEAR(DELTA(VWAP, 1), 12)),RANK(DECAYLINEAR(RANK(CORR((LOW),MEAN(VOLUME,80), 8)), 17))) * -1)###
         def cal_(df):
-            df['section1'] = -Decaylinear(df['vwap'].diff(1) / df['vwap'], 12)
+            df['section1'] = -Decaylinear(df['vwap'].diff(1), 12)
             df['section2'] = df['volume'].rolling(80).mean()
             df['section2'] = -Corr(df[['low', 'section2']], 8)['corr']
             return df
@@ -782,11 +778,11 @@ class Alpha191():
             cond2 = ((df['log-ret']<0.01) & (benchmark_close > benchmark_open))
             df['section1'] = np.where(cond1, 1, 0)
             df['section2'] = np.where(cond2, 1, 0)
-            df['alpha_075'] = df['section1'].rolling(50).sum() + df['section2'].rolling(50).sum()
+            df['alpha_075'] = df['section1'].rolling(20).sum() + df['section2'].rolling(20).sum()
             return df
 
         df = df.groupby('ts_code').apply(cal_)
-        df['alpha_075'] = df.groupby('trade_date')['alpha_075'].rank(method='min', pct=True)
+        #df['alpha_075'] = df.groupby('trade_date')['alpha_075'].rank(method='min', pct=True)
         self.df = df.drop(columns=['section1', 'section2'])
         return self.df
 
@@ -847,12 +843,13 @@ class Alpha191():
         ####2*(SMA(CLOSE,13,2)-SMA(CLOSE,27,2)-SMA(SMA(CLOSE,13,2)-SMA(CLOSE,27,2),10,2))###
         def cal_(df):
             df['alpha_089'] = 2 * (Sma(df['close'], 13, 2) - Sma(df['close'], 27, 2)
-                                   - Sma(Sma(df['close'], 13, 2) - Sma(df['close'], 27, 2), 10, 2)) \
-                              / Sma(df['close'], 13, 2)
+                                   - Sma(Sma(df['close'], 13, 2) - Sma(df['close'], 27, 2), 10, 2))
             return df
 
         df = df.groupby('ts_code').apply(cal_)
         df['alpha_089'] = df.groupby('trade_date')['alpha_089'].rank(method='min', pct=True)
+        df['alpha_089'] = np.where(df['alpha_089']==0.5, df['alpha_089']+1e-3, df['alpha_089'])
+        df['alpha_089'] = 1/(df['alpha_089'] - 0.5)
         self.df = df
         return self.df
 
@@ -875,7 +872,7 @@ class Alpha191():
 
         df_all['section1'] = df_all.groupby('trade_date')['section1'].rank(method='min', pct=True)
         df_all['alpha_092'] = -np.where(df_all['section1'] > df_all['section2'], df_all['section1'], df_all['section2'])
-        self.df = df_all.drop(columns=['section1', 'section2']).sort_values(by=['date'])
+        self.df = df_all.drop(columns=['section1', 'section2']).sort_index(level=['date'])
         return self.df
 
     ## need nothing (good)
@@ -883,14 +880,14 @@ class Alpha191():
         ## 60日均值回归
         ####((((DELTA((SUM(CLOSE, 100) / 100), 100) / DELAY(CLOSE, 100)) < 0.05) || ((DELTA((SUM(CLOSE, 100) / 100), 100) /DELAY(CLOSE, 100)) == 0.05)) ? (-1 * (CLOSE - TSMIN(CLOSE, 100))) : (-1 * DELTA(CLOSE, 3)))###
         def cal_(df):
-            section1 = ((df['close'].rolling(60).mean()).diff(60)) / df['close'].shift(60)
+            section1 = ((df['close'].rolling(100).mean()).diff(100)) / df['close'].shift(100)
             df['alpha_098'] = np.where(section1 <= 0.05,
-                                       (df['close'].rolling(60).min() - df['close']),
+                                       (df['close'].rolling(100).min() - df['close']),
                                        -df['close'].diff(3))
             return df
 
         df = df.groupby('ts_code').apply(cal_)
-        df[['alpha_098']] = df.groupby('trade_date')[['alpha_098']].rank(method='min', pct=True)
+        #df[['alpha_098']] = df.groupby('trade_date')[['alpha_098']].rank(method='min', pct=True)
         self.df = df
         return self.df
 
@@ -921,14 +918,14 @@ class Alpha191():
         ## 长短线价量相关回归
         ###((RANK(CORR(CLOSE, SUM(MEAN(VOLUME,30), 37), 15)) < RANK(CORR(RANK(((HIGH * 0.1) + (VWAP * 0.9))),RANK(VOLUME), 11))) * -1)
         def cal_(df):
-            df['section2'] = -Corr(df[['section1', 'section2']], 11)['corr']
+            df['section2'] = -Corr(df[['section2', 'vol_r']], 11)['corr']
             section1 = (df['volume'].rolling(30).mean()).rolling(37).sum()
-            section1 = pd.concat([df['section1'], section1], axis=1)
+            section1 = pd.concat([df['close'], section1], axis=1)
             df['section1'] = Corr(section1, 15)['corr']
             return df
 
-        df['section1'] = df.groupby('ts_code')['log-ret'].cumsum()
-        df[['section1', 'section2']] = df.groupby('trade_date')[['section1', 'volume']].rank(method='min', pct=True)
+        df['section2'] = df['high'] * 0.1 + df['vwap'] * 0.9
+        df[['section2', 'vol_r']] = df.groupby('trade_date')[['section2', 'volume']].rank(pct=True)
 
         df_all = pd.DataFrame()
         for ts_code in tqdm(df.ts_code.unique(), desc='processing...'):
@@ -936,9 +933,8 @@ class Alpha191():
             tmp = cal_(tmp)
             df_all = df_all.append(tmp)
 
-        #df_all[['section1', 'section2']] = df_all.groupby('trade_date')[['section1', 'section2']].rank(method='min', pct=True)
-        df_all['alpha_101'] = np.where(df_all['section1'] < df_all['section2'], df_all['section2']-df_all['section1'], df_all['section1']-df_all['section2'])
-        self.df = df_all.drop(columns=['section1', 'section2']).sort_values(by=['date'])
+        df_all['alpha_101'] = -np.where(df_all['section1'] < df_all['section2'], df['vol_r'], 11.)
+        self.df = df_all.drop(columns=['section1', 'section2', 'vol_r']).sort_values(by=['date'])
         return self.df
 
     ## need nothing
@@ -993,13 +989,14 @@ class Alpha191():
         def cal_(df):
             df['alpha_111'] = Sma(
                 df['volume'] * (df['close'] - df['low'] - df['high'] + df['close']) / (df['high'] - df['low']), 11, 2) \
-                              - Sma(
+                              -Sma(
                 df['volume'] * (df['close'] - df['low'] - df['high'] + df['close']) / (df['high'] - df['low']), 4, 2)
             return df
 
-        self.df = df.groupby('ts_code').apply(cal_)
-        self.df[['alpha_111']] = self.df.groupby('trade_date')[['alpha_111']].rank(method='min', pct=True).apply(zscore)
-        self.df['alpha_111'] = -1 / self.df['alpha_111']
+
+        self.df = df.groupby('ts_code').apply(cal_).sort_index(level=['date'])
+        #self.df[['alpha_111']] = self.df.groupby('trade_date')[['alpha_111']].rank(method='min', pct=True).apply(zscore)
+
         return self.df
 
     def alpha112(self, df):
@@ -1015,7 +1012,7 @@ class Alpha191():
 
         df = df.groupby('ts_code').apply(cal_)
 
-        df[['alpha_112']] = df.groupby('trade_date')[['alpha_112']].rank(method='min', pct=True).apply(zscore)
+        #df[['alpha_112']] = df.groupby('trade_date')[['alpha_112']].rank(method='min', pct=True).apply(zscore)
         self.df = df
         return self.df
 
@@ -1042,7 +1039,7 @@ class Alpha191():
     def alpha116(self, df):
         ####REGBETA(CLOSE,SEQUENCE,20)###
         def cal_(df):
-            df['alpha_116'] = -Regbeta(df['close'], Sequence(14) ** 2)
+            df['alpha_116'] = Regbeta(df['close'], Sequence(14) ** 2)
             return df
 
         df_all = pd.DataFrame()
@@ -1065,7 +1062,7 @@ class Alpha191():
             return df
 
         df_all = pd.DataFrame()
-        for ts_code in tqdm(df.ts_code.unique(), desc='processing1...'):
+        for ts_code in tqdm(df.ts_code.unique(), desc='processing...'):
             tmp = df.loc[df.ts_code == ts_code]
             tmp = cal_(tmp)
             df_all = df_all.append(tmp)
@@ -1165,7 +1162,7 @@ class Alpha191():
             return df
 
         df = df.groupby('ts_code').apply(cal_)
-        df['alpha_133'] = df.groupby('trade_date')['alpha_133'].rank(method='min', pct=True)
+        #df['alpha_133'] = df.groupby('trade_date')['alpha_133'].rank(method='min', pct=True)
         self.df = df
         return self.df
 
@@ -1181,12 +1178,28 @@ class Alpha191():
             # df['section1'] = df['log-ret'].cumsum()
             df['section1'] = np.where(cond < 0, df['log-ret'], 0)
             df['section2'] = np.where(cond < 0, cond, 0)
-            df['alpha_149'] = df['section2'].rolling(60).apply(
+            df['alpha_149'] = df['section2'].rolling(20).apply(
                 lambda y: np.polyfit(df.loc[y.index]['section1'], y, deg=1)[0])
             return df
 
         self.df = df.groupby('ts_code').apply(cal_)
-        self.df = self.df.sort_values(by=['date'])
+        self.df = self.df.drop(columns=['section1', 'section2'])
+        self.df = self.df.sort_index(level=['date'])
+        #df['alpha_149'] = df.groupby('trade_date')['alpha_149'].rank(pct=True)
+        return self.df
+
+    def alpha150(self, df):
+        def cal_(df):
+            cond = self.benchmark_return.loc[df.index].copy()
+            df['section1'] = df['log-ret']
+            df['section2'] = cond
+            df['alpha_150'] = df['section2'].rolling(20).apply(
+                lambda y: np.polyfit(df.loc[y.index]['section1'], y, deg=1)[1])
+            return df
+
+        self.df = df.groupby('ts_code').apply(cal_)
+        self.df = self.df.drop(columns=['section1', 'section2'])
+        self.df = self.df.sort_index(level=['date'])
         #df['alpha_149'] = df.groupby('trade_date')['alpha_149'].rank(pct=True)
         return self.df
 
@@ -1209,7 +1222,7 @@ class Alpha191():
             df['alpha_172'] = -df['alpha_172'].rolling(6).mean()
             return df
 
-        self.df = df.groupby('ts_code').apply(cal_).sort_values(by=['date'])
+        self.df = df.groupby('ts_code').apply(cal_).sort_index(level=['date'])
         return self.df
 
     ## good
