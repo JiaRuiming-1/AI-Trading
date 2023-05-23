@@ -1,5 +1,18 @@
 universe[factor_names] = universe[factor_names]/3.3
 universe = universe.sort_values(by=['date','ts_code'])
+
+def Decaylinear(sr, window):
+    weights = pd.Series(np.arange(window, 0, -1)).ewm(alpha=0.5).mean().values
+    sum_weights = np.sum(weights)
+    return sr.rolling(window).apply(lambda x: np.sum(weights * x) / sum_weights)
+
+def get_smooth_ret(all_factors):
+    def smooth_ret(data):
+        data['ret_3'] = Decaylinear(data['log-ret'], 3)
+        return data
+    all_factors = all_factors.groupby('ts_code').apply(smooth_ret)    
+    return all_factors
+
 all_factors = universe.copy(deep=True)
 #all_factors = all_factors.sort_values(by=['date'])
 def return_handle(df):
