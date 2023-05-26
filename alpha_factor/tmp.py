@@ -95,3 +95,6 @@ display_field  = [
     
 ]
 df[display_field].cumsum().plot()
+
+# sharp ratio
+np.sqrt(6*252) * df[display_field].mean()/ df[display_field].std()
