@@ -98,3 +98,48 @@ df[display_field].cumsum().plot()
 
 # sharp ratio
 np.sqrt(6*252) * df[display_field].mean()/ df[display_field].std()
+
+#####
+def alpha009(df):
+    ####SMA(((HIGH+LOW)/2-(DELAY(HIGH,1)+DELAY(LOW,1))/2)*(HIGH-LOW)/VOLUME,7,2)###
+    def cal_(df):
+        term = ((df.high + df.low) / 2 - (df.high.diff(2) + df.low.diff(2)) / 2) * (df.high - df.low) / np.log(df.amount)/df['close_size']
+        df['alpha_009'] = df['alpha_009'].ewm(alpha=2 / 6, adjust=False).mean()
+        return df
+
+    df = my_groupby(df, 'ts_code', cal_)
+    return df
+
+universe = alpha009(universe)
+
+####
+def alpha016(df):
+    ####(-1 * TSMAX(RANK(CORR(RANK(VOLUME), RANK(VWAP), 5)), 5))###
+    def cal_(data):
+        data['section1'] = data['volume']/(data['volume'].rolling(6).max() - data['volume'].rolling(6).min())
+        data['section2'] = data['vwap']/data['close_size']
+        return data
+    
+    df = my_groupby(df, 'ts_code', cal_)
+    df[['section1', 'section2']] = df.groupby('trade_date')[['section1', 'section2']].rank(method='min', pct=True)
+    df_all = pd.DataFrame()
+    for ts_code in tqdm(df.ts_code.unique(), desc='alpha016 processing...'):
+        tmp = df.loc[df.ts_code == ts_code]
+        tmp['alpha_016'] = Corr(tmp[['section1', 'section2']], 6)['corr']
+        df_all = df_all.append(tmp)
+
+    df_all = df_all.drop(columns=['section1', 'section2']).sort_index(level=['date', 'ts_code'])
+    return df_all
+
+universe = alpha016(universe)
+
+####
+def alpha_t2(df):
+    def cal_(data):
+        data['alpha_t2'] = -data['log-ret'].rolling(2).sum() / (data['amount'].rolling(6).max() - data['amount'].rolling(6).min())
+        return data
+    
+    df = my_groupby(df, 'ts_code', cal_)
+    return df
+    
+universe = alpha_t2(universe)    
