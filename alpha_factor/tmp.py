@@ -1,32 +1,25 @@
 universe[factor_names] = universe[factor_names]/3.3
 universe = universe.sort_values(by=['date','ts_code'])
 
-def Decaylinear(sr, window):
-    weights = pd.Series(np.arange(window, 0, -1)).ewm(alpha=0.5).mean().values
-    sum_weights = np.sum(weights)
-    return sr.rolling(window).apply(lambda x: np.sum(weights * x) / sum_weights)
-
-def get_smooth_ret(all_factors):
-    def smooth_ret(data):
-        data['ret_3'] = Decaylinear(data['log-ret'], 3)
-        return data
-    all_factors = all_factors.groupby('ts_code').apply(smooth_ret)    
-    return all_factors
-
+##
+universe = universe.sort_values(by=['date','ts_code'])
 all_factors = universe.copy(deep=True)
-#all_factors = all_factors.sort_values(by=['date'])
 def return_handle(df):
     df['returns_2'] = df['log-ret'].shift(-1)
     return df
 all_factors = all_factors.groupby('ts_code').apply(return_handle)
 all_factors = all_factors.replace([np.inf, -np.inf], np.nan).fillna(0.).sort_values(by=['date', 'ts_code'])
 print(universe.shape, all_factors.shape)
-
+##
+def keep_top_bottom(data, bottom=0.25, top=0.75):
+    tv = data.quantile(top)
+    bv = data.quantile(bottom)
+    data = pd.Series(np.where(data>=tv, data, np.where(data<=bv, data, 0)), index=data.index)
+    return data
+##
 def wins(x,a,b):
     return np.where(x <= a,a, np.where(x >= b, b, x))
 
-  
-  
 def get_formula(factors, Y):
     L = ["0"]
     L.extend(factors)
@@ -38,7 +31,7 @@ def factors_from_names(n, name):
 def estimate_factor_returns(df, name='alpha_'): 
     ## winsorize returns for fitting 
     estu = df.copy(deep=True)
-    estu['returns_2'] = wins(estu['returns_2'], -0.6, 0.6)
+    estu['returns_2'] = wins(estu['returns_2'], -0.2, 0.2)
     #all_factors = factors_from_names(list(df), name)
     results = pd.Series()
     for factor_name in factor_names:
@@ -47,39 +40,34 @@ def estimate_factor_returns(df, name='alpha_'):
         result = model.fit()
         results = results.append(result.params)
     return results
-  
-test = estimate_factor_returns(all_factors.loc[all_factors['trade_date']=='2022-07-01 00:00:00'])
 
+test = estimate_factor_returns(all_factors.loc[all_factors['trade_date']=='2022-05-01 00:00:00'])
+
+##
+alpha_field  = [
+    'alpha_wt',  'alpha_cci', 'alpha_srsi', 'alpha_t2',  
+    'alpha_009', 'alpha_016',  'alpha_028', 'alpha_078', 'alpha_112',
+]
 
 base_field = ['ts_code', 'log-ret', 'open', 'high', 'low', 'close', 'volume', 'vwap','trade_date']
 date_and_code = [ 'ts_code', 'returns_2']
 
-start_time = '2022-07-01 00:00:00'
+start_time = '2022-05-01 00:00:00'
 alpha_df = all_factors[factor_names + date_and_code].copy(deep=True)
 alpha_df = alpha_df.loc[alpha_df.index>=start_time]
 calendar = alpha_df.index.unique() # int64
 
-#only for positive estimate
-# for feature in alpha_field:
-#     alpha_df[feature] = np.where(alpha_df[feature]>=0.7, alpha_df[feature], np.where(alpha_df[feature]<=-0.7, alpha_df[feature], 0))
-#     alpha_df[feature] = np.where(alpha_df[feature]>0, alpha_df[feature], 0.)
+for feature in alpha_field:
+    alpha_df[feature] = keep_top_bottom(alpha_df[feature])
 
+## evaluate method 1
 facret = {}
 for dt in tqdm(calendar, desc='regression factor returns'):
     facret[dt] = estimate_factor_returns(alpha_df.loc[alpha_df.index==dt])
-#facret[calendar[-5]]
 
 
 date_list = alpha_df.index.unique()
 facret_df = pd.DataFrame(index = date_list)
-
-alpha_field  = [
-     'alpha_026', 'alpha_028', 'alpha_112', 'alpha_078' , 'alpha_t1', 
-     #'alpha_ppo', 'alpha_wt', 'rsi_6', 'alpha_040', 'alpha_srsi',
-     #'alpha_019', 'alpha_022', 'alpha_044',  'alpha_128',  'alpha_017', 'alpha_cci'
-]
-
-
 
 for ii, dt in zip(calendar,date_list): 
     for alp in alpha_field: 
@@ -92,3 +80,18 @@ plt.legend(loc='upper left')
 plt.xlabel('Date')
 plt.ylabel('Cumulative Factor Returns')
 plt.show()
+
+## evaluate method 2
+df = pd.DataFrame(index=alpha_df.index.unique())
+for dt in tqdm(alpha_df.index.unique()):
+    for feature in alpha_field:
+        tmp = alpha_df.loc[alpha_df.index == dt]
+        df.at[dt, feature] = (tmp['returns_2'] * tmp[feature]).sum()/(tmp[feature].abs().sum()) * 5
+
+##
+display_field  = [
+    'alpha_wt',  'alpha_cci', 'alpha_srsi', 'alpha_t2',  
+    'alpha_009', 'alpha_016',  'alpha_028', 'alpha_078', 'alpha_112',
+    
+]
+df[display_field].cumsum().plot()
