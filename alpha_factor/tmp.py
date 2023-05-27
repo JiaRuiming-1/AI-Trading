@@ -1,3 +1,72 @@
+universe = feather.read_dataframe('raw30_20220301_20230525.feather')
+universe = universe.drop(columns=['close time'])
+universe['date'] = pd.to_datetime(universe['date'],format='%Y-%m-%d %H:%M:%S')
+universe = universe.set_index(['date']).sort_values(by=['date', 'ts_code'])
+
+# 2023-03-24 20:00:00 data error forward fill
+for ts_code in universe.ts_code.unique():
+    universe.loc[(universe.ts_code==ts_code) & (universe.index == '2023-03-24 20:00:00')] \
+            = universe.loc[(universe.ts_code==ts_code) & (universe.index == '2023-03-24 19:00:00')]
+    
+universe['vwap'] = universe['amount']/universe['volume']
+universe = universe.rename(columns={'open':'open_usdt', 'high':'high_usdt', 'low':'low_usdt', 'close':'close_usdt', 'vwap':'vwap_usdt'})
+
+def my_groupby(df, column, func, sort_keys=['date', 'ts_code']):
+    all_df = pd.DataFrame()
+    for val in tqdm(df[column].unique()):
+        tmp = df.loc[df[column] == val]
+        all_df = all_df.append(func(tmp))
+    return all_df.sort_index(level=sort_keys)
+
+def convert_price_to_returns(df):
+    def cal_(data):
+        data['close'] = data['close_usdt'].pct_change()
+        data['close'] = (data['close'].fillna(0) + 1).cumprod()
+        data['vwap'] = data['vwap_usdt'].pct_change()
+        data['vwap'] = (data['vwap'].fillna(0) + 1).cumprod()
+        
+        for feature in ['open', 'high', 'low',]:
+            data[feature] = data[feature + '_usdt']/data['close_usdt'] * data['close']
+        return data
+    
+    df = my_groupby(df, 'ts_code', cal_)
+    return df
+
+universe = convert_price_to_returns(universe)
+universe.loc[(universe.ts_code=='ACHUSDT')][['vwap', 'close']].plot(grid=True)
+
+def alpha_t1(df):
+    def cal_(data):
+        data['alpha_t1'] = (data['close'].rolling(4).mean() - data['close'].rolling(20).mean())/data['close'].rolling(20).std()
+        data['alpha_t1'] = data['alpha_t1'] + data['rsi_6'] * 0.2
+        return data
+    
+    df = my_groupby(df, 'ts_code', cal_)
+    return df
+
+universe = alpha_t1(universe) 
+
+def alpha_t2(df):
+    def cal_(data):
+        data['alpha_t2'] = -data['log-ret']/ (data['close'].rolling(6).max() - data['close'].rolling(6).min())
+        return data
+    
+    df = my_groupby(df, 'ts_code', cal_)
+    return df
+    
+universe = alpha_t2(universe)     
+
+def alpha_t3(df):
+    def cal_(data):
+        data['alpha_t3'] = data['log-ret'].rolling(4).sum()/(data['high'] - data['low']).rolling(12).sum()
+        return data
+    
+    df = my_groupby(df, 'ts_code', cal_)
+    return df
+
+universe = alpha_t3(universe)
+
+##############################################################################################
 universe[factor_names] = universe[factor_names]/3.3
 universe = universe.sort_values(by=['date','ts_code'])
 
@@ -99,47 +168,3 @@ df[display_field].cumsum().plot()
 # sharp ratio
 np.sqrt(6*252) * df[display_field].mean()/ df[display_field].std()
 
-#####
-def alpha009(df):
-    ####SMA(((HIGH+LOW)/2-(DELAY(HIGH,1)+DELAY(LOW,1))/2)*(HIGH-LOW)/VOLUME,7,2)###
-    def cal_(df):
-        term = ((df.high + df.low) / 2 - (df.high.diff(2) + df.low.diff(2)) / 2) * (df.high - df.low) / np.log(df.amount)/df['close_size']
-        df['alpha_009'] = df['alpha_009'].ewm(alpha=2 / 6, adjust=False).mean()
-        return df
-
-    df = my_groupby(df, 'ts_code', cal_)
-    return df
-
-universe = alpha009(universe)
-
-####
-def alpha016(df):
-    ####(-1 * TSMAX(RANK(CORR(RANK(VOLUME), RANK(VWAP), 5)), 5))###
-    def cal_(data):
-        data['section1'] = data['volume']/(data['volume'].rolling(6).max() - data['volume'].rolling(6).min())
-        data['section2'] = data['vwap']/data['close_size']
-        return data
-    
-    df = my_groupby(df, 'ts_code', cal_)
-    df[['section1', 'section2']] = df.groupby('trade_date')[['section1', 'section2']].rank(method='min', pct=True)
-    df_all = pd.DataFrame()
-    for ts_code in tqdm(df.ts_code.unique(), desc='alpha016 processing...'):
-        tmp = df.loc[df.ts_code == ts_code]
-        tmp['alpha_016'] = Corr(tmp[['section1', 'section2']], 6)['corr']
-        df_all = df_all.append(tmp)
-
-    df_all = df_all.drop(columns=['section1', 'section2']).sort_index(level=['date', 'ts_code'])
-    return df_all
-
-universe = alpha016(universe)
-
-####
-def alpha_t2(df):
-    def cal_(data):
-        data['alpha_t2'] = -data['log-ret'].rolling(2).sum() / (data['amount'].rolling(6).max() - data['amount'].rolling(6).min())
-        return data
-    
-    df = my_groupby(df, 'ts_code', cal_)
-    return df
-    
-universe = alpha_t2(universe)    
