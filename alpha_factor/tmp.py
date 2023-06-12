@@ -10,3 +10,27 @@ def alpha_t7(df):
     return df
 
 universe = alpha_t7(universe)
+
+def alpha_t8(df):
+    def cal_(data):
+        data['alpha_t8'] = np.where(data['cci']>=150, -data['cci'],
+                                   np.where(data['cci']<=-150, data['cci'], data['alpha_t1']))
+        return data
+    
+    df = my_groupby(df, 'ts_code', cal_)
+    return df
+
+universe = alpha_t8(universe)
+
+
+def wins(x,a,b):
+    return np.where(x <= a,a, np.where(x >= b, b, x))
+
+for factor_name in tqdm(factor_names):
+    #factor_name = 'alpha_wt'
+    rolling_obj = universe[factor_name].rolling(len(universe.ts_code.unique()) * 500)
+    universe[factor_name] = (universe[factor_name] - rolling_obj.median())/rolling_obj.std()
+    universe[factor_name] = wins(universe[factor_name], 
+                                 rolling_obj.median() - 3 * rolling_obj.std(), 
+                                 rolling_obj.median() + 3 * rolling_obj.std())
+    universe[factor_name] = universe[factor_name]/3
