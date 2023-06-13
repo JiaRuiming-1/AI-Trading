@@ -80,6 +80,47 @@ def alpha_t3(df):
     return df
 
 universe = alpha_t3(universe)   
+
+
+def alpha_t10(df):
+    def cal_(data):
+        data['alpha_t10'] = data['close'] - (data['close'].rolling(5).mean() - index_range_df['ret_5'])
+        return data
     
+    df = my_groupby(df, 'ts_code', cal_)
+    return df
+
+universe = alpha_t10(universe)
     
+time_zscore_factors = [
+    'alpha_kama1', 'alpha_atr', 'alpha_atr1', 'alpha_supertrend', 'alpha_supertrend1', 'alpha_t5', 'alpha_t3','alpha_t8','alpha_t9',
+    'alpha_075', 'alpha_019'
+]
+
+value_zscore_factors = {
+    # mean and divide scale
+    'alpha_wt': [0, 25],
+    'alpha_cci': [0, 360],
+    'alpha_cci1':[0, 200],
+    'alpha_srsi':[-50, 100],
+    'alpha_rsi': [-50, 100],
+    'alpha_wr':[50, 100],
+    'alpha_ppo':[0, 2],
+    'alpha_ppo1':[0, 5],
+    'alpha_macd':[0, 0.03],
+    'alpha_kdj':[0,75],
+    'alpha_kama':[0,0.1],
+    'alpha_t1':[0,1],
+    'alpha_t2':[0, 0.1],
+    'alpha_t2a':[0, 0.1],
+    'alpha_t4':[0, 0.1],
+    'alpha_t4a':[0, 0.1],
+    'alpha_t5a':[0, 0.05],
+    'alpha_t6':[0, 0.05],
+    'alpha_t7':[0, 200],
+    'alpha_t10':[0, 0.1],
+}
+
+factor_names = list(value_zscore_factors.keys()) + time_zscore_factors
+final_columns = base_columns+factor_names    
         
