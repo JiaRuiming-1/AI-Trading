@@ -34,3 +34,44 @@ for factor_name in tqdm(factor_names):
                                  rolling_obj.median() - 3 * rolling_obj.std(), 
                                  rolling_obj.median() + 3 * rolling_obj.std())
     universe[factor_name] = universe[factor_name]/3
+    
+    
+# 生成一些随机数据
+x = np.linspace(-5, 5, 50)
+y = 4 * x ** 2 - 5* x + 1 + np.random.randn(50) * 5
+
+## + + fast +
+## - + slow + ready sell
+## + - slow up ready buy
+## - -  fast - 
+
+# 用np.polyfit拟合二次函数
+p = np.polyfit(x, y, 2)
+print(p)
+# 绘制原始数据和拟合曲线
+plt.scatter(x, y)
+plt.plot(x, np.polyval(p, x), 'r')
+plt.show()
+
+
+def alpha_t3(df):
+    def quadratic_cal_(x, y):
+        x = x.fillna(method='bfill').fillna(.001)
+        y = y.fillna(method='bfill').fillna(.001)
+        p = np.polyfit(x[y.index], y, deg=2)
+        return p[0] * abs(p[1])
+    
+    def cal_(data):
+        close_sma_long = data['close'].rolling(180).mean()
+        close_sma_short = data['close'].rolling(6).mean()
+        data['close_trend'] = close_sma_short.rolling(14).apply(lambda y: quadratic_cal_(close_sma_long, y))
+        data['alpha_t3'] = data['close_trend']
+        return data
+    
+    df = my_groupby(df, 'ts_code', cal_)
+    return df
+
+universe = alpha_t3(universe)   
+    
+    
+        
