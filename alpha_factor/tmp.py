@@ -1,3 +1,11 @@
+index_range_df = pd.DataFrame(index=universe.index.unique())
+for dt in tqdm(universe.index.unique()):
+    tmp = universe.loc[universe.index == dt]
+    index_range_df.at[dt, 'mean'] = tmp['atr'].mean()
+    index_range_df.at[dt, 'std'] = tmp['atr'].std()
+index_range_df.head()
+
+
 def alpha_t7(df):
     def cal_(df):
         benchmark_close = index_df.loc[df.index]['close']
