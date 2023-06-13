@@ -124,3 +124,18 @@ value_zscore_factors = {
 factor_names = list(value_zscore_factors.keys()) + time_zscore_factors
 final_columns = base_columns+factor_names    
         
+   
+def alpha_t6(df):
+    def cal_(data):
+        atr_rolling = data['atr'].rolling(180)
+        up_line = atr_rolling.mean() + 1.618*atr_rolling.std()
+        down_line = atr_rolling.mean() - 1.618*atr_rolling.std()
+        data['alpha_t6'] = np.where((data['atr']>=up_line), -data['atr'],
+                                   np.where((data['atr']<=down_line), data['atr'], 0))
+        data['alpha_t6'] = data['alpha_t6'].rolling(5).mean()
+        return data
+    
+    df = my_groupby(df, 'ts_code', cal_)
+    return df
+
+universe = alpha_t6(universe)
