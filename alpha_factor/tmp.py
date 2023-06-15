@@ -60,5 +60,9 @@ for dt in tqdm(alpha_df.index.unique()):
 #             # 1q 2q 3q 4q 5q
 #             df.at[dt, feature + '_q' + str(q)] = tmp.loc[tmp[feature + '_q'+str(q_num)]==q]['returns_2'].sum()
 
-
+['ACHUSDT', 'ADAUSDT', 'APEUSDT', 'ATOMUSDT', 'AVAXUSDT', 'BNBUSDT',
+       'BTCUSDT', 'CFXUSDT', 'DOGEUSDT', 'DOTUSDT', 'DYDXUSDT', 'ETHUSDT',
+       'FILUSDT', 'FTMUSDT', 'GALAUSDT', 'GMTUSDT', 'LINKUSDT', 'LTCUSDT',
+       'MASKUSDT', 'MATICUSDT', 'NEARUSDT', 'SANDUSDT', 'SHIBUSDT',
+       'SOLUSDT', 'STXUSDT', 'TRXUSDT', 'UMAUSDT', 'WOOUSDT', 'XRPUSDT']
 
