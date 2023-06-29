@@ -8,3 +8,13 @@ def rescale_value_factors(universe, zscore_dict = value_zscore_factors):
         
 
 universe = rescale_value_factors(universe)
+
+
+def accuracy_cal(df, feature):
+    cond = df[feature] * df['returns_2']
+    accuracy2error = df.loc[cond>0].shape[0]/df.loc[cond<0].shape[0]
+    accuracy2all = df.loc[cond>0].shape[0]/df.shape[0]
+    print(f'{feature}: {accuracy2error}, {accuracy2all}')
+    
+for feature in factor_names:
+    accuracy_cal(alpha_df, feature)
